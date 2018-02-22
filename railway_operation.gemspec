@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
 
   spec.summary       = "This is a an implementation of the railway oriented programming pattern in ruby."
   spec.description   = "This gem allows you to declare an execution tree for executing a series of methods and commands."
-  spec.homepage      = "TODO: Put your gem's website or public repo URL here."
+  spec.homepage      = "https://github.com/felixflores/railway_operation/"
   spec.license       = "MIT"
 
   # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
