@@ -1,3 +1,4 @@
+require 'pry-byebug'
 require "bundler/setup"
 require "railway_operation"
 
