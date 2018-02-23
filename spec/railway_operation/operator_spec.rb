@@ -1,28 +1,57 @@
-# -*- coding: utf-8 -*-
+# frozen_string_literal: true
+
 require 'spec_helper'
+
+class Sample1
+  include RailwayOperation::Operator
+
+  track 0, :track_0_0
+  track 0, :track_0_1, success: 2
+  track 1, :track_1_2, failure: 1
+  track 0, :track_0_3, success: 4
+  track 2, :track_2_4
+end
+
+class InfiniteSteps
+  include RailwayOperation::Operator
+
+  def method_missing(method, argument)
+    insert_value(argument, method)
+  end
+
+  def insert_value(argument, value)
+    argument['value'] ||= []
+    argument['value'] << value
+    argument
+  end
+end
+
+class Sample2 < InfiniteSteps
+  track 0, :step1
+  track 0, :step2
+  track 0, :step3
+end
+
+class Sample3 < InfiniteSteps
+  track 0, :step1
+  track 1, :step2
+  track 0, :step3
+end
+
+class Sample4 < InfiniteSteps
+  track 0, :step1
+  track 1, :step2
+  track 0, :step3
+  track 1, :step4
+  track 2, :step5
+
+  def step1(_argument)
+    raise FailStep.new
+  end
+end
 
 describe RailwayOperation::Operator do
   context '.track' do
-    class Sample1 < described_class
-      track 0, :track_0_0
-      track 0, :track_0_1, success: 2
-      track 1, :track_1_2, failure: 1
-      track 0, :track_0_3, success: 4
-      track 2, :track_2_4
-    end
-
-    class InfiniteSteps < described_class
-      def method_missing(method, argument)
-        insert_value(argument, method)
-      end
-
-      def insert_value(argument, value)
-        argument['value'] ||= []
-        argument['value'] << value
-        argument
-      end
-    end
-
     let(:track0) do
       [
         { method: :track_0_0, success: nil, failure: nil },
@@ -44,14 +73,8 @@ describe RailwayOperation::Operator do
       expect(Sample1.tracks).to eq([track0, track1, track2])
     end
   end
-
   describe '.run' do
     context 'happy_path' do
-      class Sample2 < InfiniteSteps
-        track 0, :step1
-        track 0, :step2
-        track 0, :step3
-      end
 
       it 'executes the steps in the operation' do
         result = Sample2.run
@@ -67,32 +90,15 @@ describe RailwayOperation::Operator do
       end
     end
 
+
     context 'multiple tracks defined' do
       it 'remains on the same track if step does not fail' do
-        class Sample3 < InfiniteSteps
-          track 0, :step1
-          track 1, :step2
-          track 0, :step3
-        end
-
         result = Sample3.run
         expect(result).to eq('value' => [:step1, :step3])
       end
 
       context 'step failure' do
-        class Sample4 < InfiniteSteps
-          track 0, :step1
-          track 1, :step2
-          track 0, :step3
-          track 1, :step4
-          track 2, :step5
-
-          def step1(_argument)
-            raise FailStep.new
-          end
-        end
-
-        it 'moves to the next track (0 → 1) when a step fails' do
+        it 'moves to the next track when a step fails' do
           result = Sample4.run
           expect(result).to eq('value' => [:step2, :step4])
         end
