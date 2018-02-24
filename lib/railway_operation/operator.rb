@@ -11,31 +11,40 @@ module RailwayOperation
     end
 
     module ClassMethods
+      def track_alias(mapping = {})
+        @track_alias = (@track_alias || {}).merge(mapping)
+        @track_alias
+      end
+
       def track(track_index, method, failure: nil, success: nil)
-        @track ||= []
         @step_count ||= 0
 
-        @track[track_index] ||= []
-        @track[track_index][@step_count] = {
+        fetch_track(track_index)[@step_count] = {
           method: method,
           success: success,
           failure: failure
         }
 
         @step_count += 1
-        @track
+        tracks
       end
 
       def tracks
-        @track
+        @tracks ||= []
       end
 
-      def run(argument = Result.new)
+      def run(argument)
         # Find the first track with a step defined
         track_index = tracks.index { |v| !v.nil? }
         step_index = 0
 
         new.run(argument, track_index, step_index)
+      end
+
+      def fetch_track(index_or_key)
+        index = track_alias[index_or_key] || index_or_key
+        tracks[index] ||= []
+        tracks[index]
       end
     end
 
@@ -49,11 +58,11 @@ module RailwayOperation
         # SwitchTrack or HaltExecution and maintain the mutations
         # to the argument thus far
         new_argument = argument.clone
-        current_step = tracks[track_index][step_index]
+        current_step = self.class.fetch_track(track_index)[step_index]
 
         begin
           if current_step
-            send(current_step[:method], new_argument)
+            run_step!(current_step, new_argument)
             run(new_argument, current_step[:success] || track_index, step_index + 1)
           else
             run(argument, track_index, step_index + 1)
@@ -96,7 +105,15 @@ module RailwayOperation
       end
 
       def last_step_index
-        @lsi ||= tracks.sort_by(&:length).last.length - 1
+        @last_step_index ||= (tracks.compact.max_by(&:length) || []).length - 1
+      end
+
+      def run_step!(step, argument)
+        if step[:method].is_a?(Symbol)
+          send(step[:method], argument)
+        else
+          step[:method].call(argument)
+        end
       end
     end
   end

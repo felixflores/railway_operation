@@ -29,14 +29,14 @@ end
 describe 'halt RailwayOperation::Operator' do
   context 'halt step' do
     it 'maintains within step so far and continues to next step' do
-      result = MidStepHalt.run
+      result = MidStepHalt.run({})
       expect(result['value']).to eq([:step1, 2.1, :step3])
     end
   end
 
   context 'halt operation' do
     it 'maintains within step so far and does not continue to next step' do
-      result = HaltOperationMidStep.run
+      result = HaltOperationMidStep.run({})
       expect(result['value']).to eq([:step1, 2.1])
     end
   end
