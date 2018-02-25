@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module RailwayOperation
   class Result < Hash
     def success?
@@ -5,3 +7,4 @@ module RailwayOperation
     end
   end
 end
+

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module RailwayOperation
   module Operator
     class FailStep < StandardError; end
@@ -12,8 +14,7 @@ module RailwayOperation
 
     module ClassMethods
       def track_alias(mapping = {})
-        @track_alias = (@track_alias || {}).merge(mapping)
-        @track_alias
+        (@track_alias ||= {}).merge(mapping)
       end
 
       def track(track_index, method, failure: nil, success: nil)
@@ -67,7 +68,7 @@ module RailwayOperation
           else
             run(argument, track_index, step_index + 1)
           end
-        rescue FailStep
+        rescue FailStep => e
           next_track_index = current_step[:failure]
           next_track_index ||= track_index + 1
 
