@@ -41,6 +41,7 @@ module RailwayOperation
 
       def surround_operation(method = nil)
         if block_given?
+          # TODO
         else
           operation_surrounds << method
         end
@@ -101,18 +102,21 @@ module RailwayOperation
         step_index:
       )
         first, *rest = operation_surrounds
+
+        result = nil
         send_surround(first) do
-          if rest.empty?
-            run_steps(argument, track_index, step_index)
-          else
-            run_with_operation_surrounds(
-              operation_surrounds: rest,
-              argument: argument,
-              track_index: track_index,
-              step_index: step_index
-            )
-          end
+          result = if rest.empty?
+                     run_steps(argument, track_index, step_index)
+                   else
+                     run_with_operation_surrounds(
+                       operation_surrounds: rest,
+                       argument: argument,
+                       track_index: track_index,
+                       step_index: step_index
+                     )
+                   end
         end
+        result
       end
 
       def send_surround(surround_definition)
