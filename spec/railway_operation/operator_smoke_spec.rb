@@ -56,7 +56,18 @@ describe 'smoke test RailwayOperation::Operator' do
       result = HappyPath.run(argument)
 
       expect(argument).to eq('original_value' => "don't change")
-      expect(result).to eq('original_value' => "don't change", 'value' => %i[step1 step2 step3])
+      expect(result).to eq(
+        'original_value' => "don't change",
+        'value' => %i[step1 step2 step3]
+      )
+    end
+
+    it 'can accept splatted hash' do
+      result = HappyPath.run(original: :value)
+      expect(result).to eq(
+        original: :value,
+        'value' => %i[step1 step2 step3]
+      )
     end
 
     it 'does nothing when no steps are specified' do
