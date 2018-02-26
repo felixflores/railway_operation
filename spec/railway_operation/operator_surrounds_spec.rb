@@ -24,50 +24,64 @@ end
 #  Surround#surround1 do
 #    Surround#surround2 do
 #      FakeLogger.record do
-#        run_steps
+#        "block surround" do
+#          run_steps
+#        end
 #      end
 #    end
 #  end
-class Surround < InfiniteSteps
+class Surround
+  include RailwayOperation::Operator
+
   surround_operation :surround1
   surround_operation :surround2
   surround_operation [FakeLogger, :record]
-  # surround_operation do |operation|
-  #   FakeLogger.log('Before Log')
-  #   operation.run
-  #   FakeLogger.log('After Log')
-  # end
+  surround_operation do |operation| # This is a block surround
+    log_from_block('Before Block Surround')
+    operation.call
+    log_from_block('After Block Surround')
+  end
 
   track 0, :step1
   track 0, :step2
   track 0, :step3
 
-  def self.log1
-    @log1 ||= []
+  def self.log(index)
+    @log ||= []
+    @log[index] ||= []
+    @log[index]
   end
 
-  def self.clear_log1
-    @log1 = []
+  def self.clear_log
+    @log = []
   end
 
-  def self.log2
-    @log2 ||= []
-  end
-
-  def self.clear_log2
-    @log2 = []
+  def self.log_from_block(message)
+    log(3) << message
   end
 
   def surround1
-    self.class.log1 << 'Surround 1 Before'
+    self.class.log(1) << 'Surround 1 Before'
     yield
-    self.class.log1 << 'Surround 1 After'
+    self.class.log(1) << 'Surround 1 After'
   end
 
   def surround2
-    self.class.log2 << 'Surround 2 Before'
+    self.class.log(2) << 'Surround 2 Before'
     yield
-    self.class.log2 << 'Surround 2 After'
+    self.class.log(2) << 'Surround 2 After'
+  end
+
+  def step1(argument)
+    argument[:step1] = true
+  end
+
+  def step2(argument)
+    argument[:step2] = true
+  end
+
+  def step3(argument)
+    argument[:step3] = true
   end
 end
 
@@ -75,31 +89,38 @@ describe 'surround RailwayOperation::Operator' do
   context 'operation' do
     let!(:result) { Surround.run({}) }
     after(:each) do
-      Surround.clear_log1
-      Surround.clear_log2
+      Surround.clear_log
       FakeLogger.clear_log
     end
 
     it 'executes steps' do
-      expect(result['value']).to eq(%i[step1 step2 step3])
+      expect(result).to eq(
+        step1: true,
+        step2: true,
+        step3: true
+      )
     end
 
     context 'instance method surrounds' do
       it 'surrounds operation with speficied instance method' do
-        expect(Surround.log1).to eq(['Surround 1 Before', 'Surround 1 After'])
+        expect(Surround.log(1)).to eq(['Surround 1 Before', 'Surround 1 After'])
       end
 
       it 'surrounds operation can be nested' do
-        expect(Surround.log2).to eq(['Surround 2 Before', 'Surround 2 After'])
+        expect(Surround.log(2)).to eq(['Surround 2 Before', 'Surround 2 After'])
       end
     end
 
     context 'arbitrary class method surrounds' do
-      it 'is allowed to be declare' do
-        expect(FakeLogger.log).to eq(['Before', 'After'])
-      end
+      it { expect(FakeLogger.log).to eq(%w[Before After]) }
     end
 
-    context 'block surrounds'
+    context 'block surrounds' do
+      it {
+        expect(Surround.log(3)).to eq(
+          ['Before Block Surround', 'After Block Surround']
+        )
+      }
+    end
   end
 end

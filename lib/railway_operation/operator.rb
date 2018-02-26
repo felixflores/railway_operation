@@ -39,12 +39,8 @@ module RailwayOperation
         @track_alias
       end
 
-      def surround_operation(method = nil)
-        if block_given?
-          # TODO
-        else
-          operation_surrounds << method
-        end
+      def surround_operation(method = nil, &block)
+        operation_surrounds << (method || block)
       end
 
       def operation_surrounds
@@ -120,10 +116,13 @@ module RailwayOperation
       end
 
       def send_surround(surround_definition)
-        if surround_definition.is_a?(Symbol)
+        case surround_definition
+        when Symbol
           send(surround_definition) { yield }
-        elsif surround_definition.is_a?(Array)
+        when Array
           surround_definition[0].send(surround_definition[1]) { yield }
+        when Proc
+          surround_definition.call(-> { yield })
         else
           send(:null_surround) { yield }
         end
