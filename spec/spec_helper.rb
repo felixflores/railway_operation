@@ -3,6 +3,8 @@
 require 'pry-byebug'
 require 'bundler/setup'
 require 'helpers/infinite_steps'
+require 'helpers/fake_logger'
+require 'helpers/complex_example'
 
 require 'railway_operation'
 

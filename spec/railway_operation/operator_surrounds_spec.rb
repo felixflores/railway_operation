@@ -2,19 +2,13 @@
 
 require 'spec_helper'
 
-class FakeLogger
+class SampleLogger
+  extend FakeLogger
+
   def self.record
-    log << 'Before'
+    log(0) << 'Before'
     yield
-    log << 'After'
-  end
-
-  def self.log
-    @log ||= []
-  end
-
-  def self.clear_log
-    @log = []
+    log(0) << 'After'
   end
 end
 
@@ -23,7 +17,7 @@ end
 #
 #  Surround#surround1 do
 #    Surround#surround2 do
-#      FakeLogger.record do
+#      SampleLogger.record do
 #        "block surround" do
 #          run_steps
 #        end
@@ -31,11 +25,12 @@ end
 #    end
 #  end
 class Surround
+  extend FakeLogger
   include RailwayOperation::Operator
 
   surround_operation :surround1
   surround_operation :surround2
-  surround_operation [FakeLogger, :record]
+  surround_operation [SampleLogger, :record]
   surround_operation do |operation| # This is a block surround
     log_from_block('Before Block Surround')
     operation.call
@@ -45,16 +40,6 @@ class Surround
   track 0, :step1
   track 0, :step2
   track 0, :step3
-
-  def self.log(index)
-    @log ||= []
-    @log[index] ||= []
-    @log[index]
-  end
-
-  def self.clear_log
-    @log = []
-  end
 
   def self.log_from_block(message)
     log(3) << message
@@ -90,7 +75,7 @@ describe 'surround RailwayOperation::Operator' do
     let!(:result) { Surround.run({}) }
     after(:each) do
       Surround.clear_log
-      FakeLogger.clear_log
+      SampleLogger.clear_log
     end
 
     it 'executes steps' do
@@ -112,7 +97,7 @@ describe 'surround RailwayOperation::Operator' do
     end
 
     context 'arbitrary class method surrounds' do
-      it { expect(FakeLogger.log).to eq(%w[Before After]) }
+      it { expect(SampleLogger.log(0)).to eq(%w[Before After]) }
     end
 
     context 'block surrounds' do
