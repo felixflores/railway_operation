@@ -1,5 +1,10 @@
-class Result < Hash
-  def success?
-    self[:errors].nil? || self[:errors].empty?
+# frozen_string_literal: true
+
+module RailwayOperation
+  class Result < Hash
+    def success?
+      self[:errors].nil? || self[:errors].empty?
+    end
   end
 end
+
