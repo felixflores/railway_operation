@@ -47,11 +47,11 @@ module RailwayOperation
         @operation_surrounds ||= []
       end
 
-      def track(track_index, method, failure: nil, success: nil)
+      def track(track_index, method = nil, failure: nil, success: nil, &block)
         @step_count ||= 0
 
         fetch_track(track_index)[@step_count] = {
-          method: method,
+          method: method || block,
           success: success,
           failure: failure
         }
@@ -218,11 +218,11 @@ module RailwayOperation
         @last_step_index ||= (tracks.compact.max_by(&:length) || []).length - 1
       end
 
-      def run_step(step, argument)
-        if step[:method].is_a?(Symbol)
-          send(step[:method], argument)
+      def run_step(step_definition, argument)
+        if step_definition[:method].is_a?(Symbol)
+          send(step_definition[:method], argument)
         else
-          step[:method].call(argument)
+          step_definition[:method].call(argument)
         end
       end
     end
