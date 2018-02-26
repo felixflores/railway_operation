@@ -98,8 +98,8 @@ module RailwayOperation
         step_index:
       )
         first, *rest = operation_surrounds
-
         result = nil
+
         send_surround(first) do
           result = if rest.empty?
                      run_steps(argument, track_index, step_index)
@@ -112,6 +112,7 @@ module RailwayOperation
                      )
                    end
         end
+
         result
       end
 
@@ -124,12 +125,8 @@ module RailwayOperation
         when Proc
           surround_definition.call(-> { yield })
         else
-          send(:null_surround) { yield }
+          yield
         end
-      end
-
-      def null_surround
-        yield
       end
 
       def run_steps(argument, track_index = 0, step_index = 0)
