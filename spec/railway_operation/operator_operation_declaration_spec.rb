@@ -13,6 +13,11 @@ class Sample < InfiniteSteps
   track 0, :method1, operation: :variation2
   track 0, :method3, operation: :variation2
 
+  op = operation(:variation3)
+  track 0, :method1, operation: op
+  track 0, :method1, operation: op
+  track 0, :method3, operation: op
+
   track 0, :method1
   track 0, :method2
   track 0, :method3
@@ -35,5 +40,10 @@ describe 'operation declaration RailwayOperation::Operator' do
   it 'allow operation declaration using block syntax' do
     result = Sample.run_variation1({})
     expect(result['value']).to eq(%i[method3 method2 method1])
+  end
+
+  it 'allows inline operation declaration' do
+    result = Sample.run_variation3({})
+    expect(result['value']).to eq(%i[method1 method1 method3])
   end
 end
