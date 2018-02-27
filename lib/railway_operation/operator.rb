@@ -62,7 +62,8 @@ module RailwayOperation
       end
 
       def track(*args, operation: nil, **options, &block)
-        operation(operation || :default).track(*args, **options, &block)
+        operation_name = operation.is_a?(Operation) ? operation.name : operation
+        operation(operation_name || :default).track(*args, **options, &block)
       end
 
       def tracks
