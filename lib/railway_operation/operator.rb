@@ -40,11 +40,15 @@ module RailwayOperation
         method_name.match(CAPTURE_OPERATION_NAME)
       end
 
-      def method_missing(method_name, *args, **opts)
+      def method_missing(method_name, argument, **opts)
         raise NoMethodError, method_name unless respond_to_missing?(method_name)
+        operation_name = method_name.match(CAPTURE_OPERATION_NAME)[:operation_name]
 
-        CAPTURE_OPERATION_NAME =~ method_name
-        run(args.first, operation: operation(operation_name), **opts)
+        run(
+          argument,
+          operation: operation(operation_name),
+          **opts
+        )
       end
     end
 
@@ -53,7 +57,7 @@ module RailwayOperation
 
       def operation(name)
         @operations ||= {}
-        op = @operations[name] ||= Operation.new(name)
+        op = @operations[name.to_sym] ||= Operation.new(name.to_sym)
         block_given? ? yield(op) : op
       end
 
