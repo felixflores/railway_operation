@@ -23,6 +23,8 @@ module RailwayOperation
   #
   # SomeObject.run(my: 'values', in: 'the_hash')
   module Operator
+    CAPTURE_OPERATION_NAME = /run_*(?<operation_name>\w*)/
+
     class FailStep < StandardError; end
     class HaltStep < StandardError; end
     class HaltOperation < StandardError; end
@@ -33,58 +35,62 @@ module RailwayOperation
       base.send :include, InstanceMethods
     end
 
+    module DynamicRun
+      def respond_to_missing?(method_name, _include_private = false)
+        method_name.match(CAPTURE_OPERATION_NAME)
+      end
+
+      def method_missing(method_name, argument, **opts)
+        raise NoMethodError, method_name unless respond_to_missing?(method_name)
+        operation_name = method_name.match(CAPTURE_OPERATION_NAME)[:operation_name]
+
+        run(
+          argument,
+          operation: operation(operation_name),
+          **opts
+        )
+      end
+    end
+
     module ClassMethods
-      def track_alias(mapping = {})
-        @track_alias = (@track_alias || {}).merge(mapping)
-        @track_alias
+      include DynamicRun
+
+      def operation(name)
+        @operations ||= {}
+        op = @operations[name.to_sym] ||= Operation.new(name.to_sym)
+        block_given? ? yield(op) : op
       end
 
-      def surround_operation(method = nil, &block)
-        operation_surrounds << (method || block)
-      end
-
-      def operation_surrounds
-        @operation_surrounds ||= []
-      end
-
-      def track(track_index, method = nil, failure: nil, success: nil, &block)
-        @step_count ||= 0
-
-        fetch_track(track_index)[@step_count] = {
-          method: method || block,
-          success: success,
-          failure: failure
-        }
-
-        @step_count += 1
-        tracks
+      def track(*args, operation: nil, **options, &block)
+        operation(operation || :default).track(*args, **options, &block)
       end
 
       def tracks
-        @tracks ||= []
+        operation(:default).tracks
       end
 
-      def run(argument)
-        # Find the first track with a step defined
-        track_index = tracks.index { |v| !v.nil? }
-        step_index = 0
-
-        new.run(argument, track_index, step_index)
+      def alias_tracks(mapping = {})
+        operation(:default).alias_tracks(mapping)
       end
 
-      def fetch_track(index)
-        index = index.is_a?(Numeric) ? index : track_alias[index]
-        tracks[index] ||= []
-        tracks[index]
+      def surround_operation(method = nil, &block)
+        operation(:default).surrounds << (method || block)
+      end
+
+      def run(argument, **opts)
+        new.run(argument, operation: operation(:default), **opts)
       end
     end
 
     module InstanceMethods
-      def run(argument, track_index = 0, step_index = 0)
+      include DynamicRun
+
+      def run(argument, operation:, track_id: 0, step_index: 0)
         run_with_operation_surrounds(
-          operation_surrounds: self.class.operation_surrounds,
-          argument: argument,
-          track_index: track_index,
+          argument,
+          operation: operation,
+          operation_surrounds: operation.surrounds,
+          track_id: track_id,
           step_index: step_index
         )
       end
@@ -92,9 +98,10 @@ module RailwayOperation
       private
 
       def run_with_operation_surrounds(
+        argument,
+        operation:,
         operation_surrounds:,
-        argument:,
-        track_index:,
+        track_id:,
         step_index:
       )
         first, *rest = operation_surrounds
@@ -102,12 +109,18 @@ module RailwayOperation
 
         send_surround(first) do
           result = if rest.empty?
-                     run_steps(argument, track_index, step_index)
+                     run_steps(
+                       argument,
+                       operation: operation,
+                       track_index: operation.track_alias(track_id),
+                       step_index: step_index
+                     )
                    else
                      run_with_operation_surrounds(
+                       argument,
+                       operation: operation,
                        operation_surrounds: rest,
-                       argument: argument,
-                       track_index: track_index,
+                       track_id: track_id,
                        step_index: step_index
                      )
                    end
@@ -129,8 +142,8 @@ module RailwayOperation
         end
       end
 
-      def run_steps(argument, track_index = 0, step_index = 0)
-        return argument if step_index > last_step_index
+      def run_steps(argument, track_index:, step_index:, operation:)
+        return argument if step_index > operation.last_step_index
 
         # We memoize the version of the argument which was passed
         # to run_steps at the first iteration of the recursion
@@ -142,7 +155,7 @@ module RailwayOperation
         # SwitchTrack or HaltExecution and maintain the mutations
         # to the argument thus far
         new_argument = argument.clone
-        step_definition = self.class.fetch_track(track_index)[step_index]
+        step_definition = operation.fetch_track(track_index)[step_index]
 
         begin
           if step_definition
@@ -154,14 +167,20 @@ module RailwayOperation
             # then pass the modified argument to the next step.
             run_steps(
               new_argument,
-              step_definition[:success] || track_index,
-              step_index + 1
+              operation: operation,
+              track_index: step_definition[:success] || track_index,
+              step_index: step_index + 1
             )
           else
             # If there are no step definitions found for a given step
             # of a track, proceed to the next step without any modification
             # to the argument.
-            run_steps(argument, track_index, step_index + 1)
+            run_steps(
+              argument,
+              operation: operation,
+              track_index: track_index,
+              step_index: step_index + 1
+            )
           end
         rescue HaltStep
           next_track_index = step_definition[:success] || track_index
@@ -169,7 +188,12 @@ module RailwayOperation
           # When we halt a step, we preserve the changes to the argument so far
           # in that step, and proceed to the next step with the modified
           # argument.
-          run_steps(new_argument, next_track_index, step_index + 1)
+          run_steps(
+            new_argument,
+            operation: operation,
+            track_index: next_track_index,
+            step_index: step_index + 1
+          )
         rescue HaltOperation
           # This is the version of the argument after it was potentially
           # modified by run_steps. Halting preseverse modifications performed
@@ -180,7 +204,12 @@ module RailwayOperation
 
           # When a step is failed we rollback any changes performed at that step
           # and continue execution to of the proceeding steps.
-          run_steps(argument, next_track_index, step_index + 1)
+          run_steps(
+            argument,
+            operation: operation,
+            track_index: next_track_index,
+            step_index: step_index + 1
+          )
         rescue FailOperation
           # this the value of the argument prior to it being passed to run_steps
           @original_argument
@@ -209,10 +238,6 @@ module RailwayOperation
 
       def operation_surrounds
         self.class.operation_surrounds
-      end
-
-      def last_step_index
-        @last_step_index ||= (tracks.compact.max_by(&:length) || []).length - 1
       end
 
       def run_step(step_definition, argument)
