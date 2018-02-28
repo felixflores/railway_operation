@@ -14,6 +14,9 @@ class NestedExample < InfiniteSteps
     o.nest operation(:variation1)
     o.add_step 0, :method5
   end
+
+  nest operation(:variation2)
+  add_step 0, :method6
 end
 
 describe 'nested operation RailwayOperation::Operator' do
@@ -25,5 +28,12 @@ describe 'nested operation RailwayOperation::Operator' do
   it 'allows operations to be nested' do
     result = NestedExample.run_variation2({})
     expect(result['value']).to eq(%i[method1 method2 method3 method4 method5])
+  end
+
+  it 'allows named operations to be nested to the default operation' do
+    result = NestedExample.run({})
+    expect(result['value']).to eq(
+      %i[method1 method2 method3 method4 method5 method6]
+    )
   end
 end

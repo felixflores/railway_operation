@@ -70,7 +70,7 @@ class Surround
   end
 end
 
-describe 'surround RailwayOperation::Operator' do
+describe 'surround operation RailwayOperation::Operator' do
   context 'operation' do
     let!(:result) { Surround.run({}) }
     after(:each) do
