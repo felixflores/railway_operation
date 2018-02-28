@@ -61,9 +61,9 @@ module RailwayOperation
         block_given? ? yield(op) : op
       end
 
-      def track(*args, operation: nil, **options, &block)
+      def add_step(*args, operation: nil, **options, &block)
         operation_name = operation.is_a?(Operation) ? operation.name : operation
-        operation(operation_name || :default).track(*args, **options, &block)
+        operation(operation_name || :default).add_step(*args, **options, &block)
       end
 
       def tracks

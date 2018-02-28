@@ -37,9 +37,9 @@ class Surround
     log_from_block('After Block Surround')
   end
 
-  track 0, :step1
-  track 0, :step2
-  track 0, :step3
+  add_step 0, :step1
+  add_step 0, :step2
+  add_step 0, :step3
 
   def self.log_from_block(message)
     log(3) << message

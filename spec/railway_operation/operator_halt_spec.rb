@@ -3,9 +3,9 @@
 require 'spec_helper'
 
 class MidStepHalt < InfiniteSteps
-  track 0, :step1
-  track 0, :step2
-  track 0, :step3
+  add_step 0, :step1
+  add_step 0, :step2
+  add_step 0, :step3
 
   def step2(argument)
     argument['value'] << 2.1
@@ -15,9 +15,9 @@ class MidStepHalt < InfiniteSteps
 end
 
 class HaltOperationMidStep < InfiniteSteps
-  track 0, :step1
-  track 0, :step2
-  track 0, :step3
+  add_step 0, :step1
+  add_step 0, :step2
+  add_step 0, :step3
 
   def step2(argument)
     argument['value'] << 2.1

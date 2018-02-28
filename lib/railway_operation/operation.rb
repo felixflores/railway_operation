@@ -5,6 +5,7 @@ module RailwayOperation
     attr_reader :name, :mapping, :tracks
     attr_accessor :surrounds
 
+
     def initialize(name)
       @surrounds = []
       @tracks = []
@@ -12,18 +13,31 @@ module RailwayOperation
       @name = name
     end
 
-    def track(
-      identifier,
+    def add_step(
+      track,
       method = nil,
       failure: nil,
       success: nil,
       &block
     )
-      fetch_track(identifier)[next_step_index] = {
+      fetch_track(track)[next_step_index] = {
         method: method || block,
         success: track_alias(success),
         failure: track_alias(failure)
       }
+    end
+
+    def nest(operation)
+      operation.tracks.each_with_index do |t, track_index|
+        t.each do |step_definition|
+          add_step(
+            track_index,
+            step_definition[:method],
+            success: step_definition[:success],
+            failure: step_definition[:failure]
+          )
+        end
+      end
     end
 
     def alias_tracks(mapping = {})

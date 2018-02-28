@@ -4,23 +4,23 @@ require 'spec_helper'
 
 class Sample < InfiniteSteps
   operation(:variation1) do |o|
-    o.track 0, :method3
-    o.track 0, :method2
-    o.track 0, :method1
+    o.add_step 0, :method3
+    o.add_step 0, :method2
+    o.add_step 0, :method1
   end
 
-  track 0, :method2, operation: :variation2
-  track 0, :method1, operation: :variation2
-  track 0, :method3, operation: :variation2
+  add_step 0, :method2, operation: :variation2
+  add_step 0, :method1, operation: :variation2
+  add_step 0, :method3, operation: :variation2
 
   op = operation(:variation3)
-  track 0, :method1, operation: op
-  track 0, :method1, operation: op
-  track 0, :method3, operation: op
+  add_step 0, :method1, operation: op
+  add_step 0, :method1, operation: op
+  add_step 0, :method3, operation: op
 
-  track 0, :method1
-  track 0, :method2
-  track 0, :method3
+  add_step 0, :method1
+  add_step 0, :method2
+  add_step 0, :method3
 end
 
 describe 'operation declaration RailwayOperation::Operator' do
