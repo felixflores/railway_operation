@@ -3,17 +3,17 @@
 require 'spec_helper'
 
 class MultiplePath < InfiniteSteps
-  track 0, :step1
-  track 1, :step2
-  track 0, :step3
+  add_step 0, :step1
+  add_step 1, :step2
+  add_step 0, :step3
 end
 
 class StepFailure < InfiniteSteps
-  track 0, :step0_0
-  track 1, :fail1_1
-  track 0, :step0_2
-  track 1, :fail1_3
-  track 2, :step2_4
+  add_step 0, :step0_0
+  add_step 1, :fail1_1
+  add_step 0, :step0_2
+  add_step 1, :fail1_3
+  add_step 2, :step2_4
 
   def step0_2(argument)
     argument['first_mutations'] = true
@@ -22,9 +22,9 @@ class StepFailure < InfiniteSteps
 end
 
 class FailOperationMidStep < InfiniteSteps
-  track 0, :step1
-  track 0, :step2
-  track 0, :step3
+  add_step 0, :step1
+  add_step 0, :step2
+  add_step 0, :step3
 
   def step2(argument)
     argument['value'] << 2.1

@@ -3,24 +3,24 @@
 require 'spec_helper'
 
 class ExplicitSuccessTrack < InfiniteSteps
-  track 0, :step1
-  track 0, :step2, success: 4
-  track 4, :step3
-  track 1, :step4
+  add_step 0, :step1
+  add_step 0, :step2, success: 4
+  add_step 4, :step3
+  add_step 1, :step4
 end
 
 class DistantExplicitSuccessTrack < InfiniteSteps
-  track 0, :step1
-  track 0, :step2, success: 20
-  track 2, :step3
-  track 1, :step4
+  add_step 0, :step1
+  add_step 0, :step2, success: 20
+  add_step 2, :step3
+  add_step 1, :step4
 end
 
 class ExplicitFailTrack < InfiniteSteps
-  track 0, :step1
-  track 0, :step2, failure: 2
-  track 1, :skip3
-  track 2, :step4
+  add_step 0, :step1
+  add_step 0, :step2, failure: 2
+  add_step 1, :skip3
+  add_step 2, :step4
 
   def step2(_argument)
     fail_step!
@@ -28,10 +28,10 @@ class ExplicitFailTrack < InfiniteSteps
 end
 
 class DistantExplicitFailTrack < InfiniteSteps
-  track 0, :step1
-  track 0, :step2, failure: 20
-  track 0, :skip3
-  track 1, :skip4
+  add_step 0, :step1
+  add_step 0, :step2, failure: 20
+  add_step 0, :skip3
+  add_step 1, :skip4
 
   def step2(_argument)
     fail_step!

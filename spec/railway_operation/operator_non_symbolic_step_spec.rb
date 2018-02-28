@@ -11,10 +11,10 @@ end
 class POROClass
   include RailwayOperation::Operator
 
-  track 0, :step1
-  track 0, AClass
-  track 0, ->(argument) { argument[:in_lambda] = true }
-  track 0 do |argument|
+  add_step 0, :step1
+  add_step 0, AClass
+  add_step 0, ->(argument) { argument[:in_lambda] = true }
+  add_step 0 do |argument|
     argument[:in_block] = true
   end
 
