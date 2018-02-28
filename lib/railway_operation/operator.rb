@@ -52,8 +52,24 @@ module RailwayOperation
       end
     end
 
+    module SendSurround
+      def send_surround(surround_definition, *args)
+        case surround_definition
+        when Symbol
+          send(surround_definition, *args) { yield }
+        when Array
+          surround_definition[0].send(surround_definition[1], *args) { yield }
+        when Proc
+          surround_definition.call(-> { yield }, *args)
+        else
+          yield
+        end
+      end
+    end
+
     module ClassMethods
       include DynamicRun
+      include SendSurround
 
       def operation(name)
         @operations ||= {}
@@ -74,8 +90,16 @@ module RailwayOperation
         operation(:default).alias_tracks(mapping)
       end
 
+      def nest(*args)
+        operation(:default).nest(*args)
+      end
+
       def surround_operation(method = nil, &block)
         operation(:default).surrounds << (method || block)
+      end
+
+      def surround_steps(on_track: 0, with:)
+        operation(:default).surround_steps(on_track: on_track, with: with)
       end
 
       def run(argument, **opts)
@@ -85,6 +109,7 @@ module RailwayOperation
 
     module InstanceMethods
       include DynamicRun
+      include SendSurround
 
       def run(argument, operation:, track_id: 0, step_index: 0)
         run_with_operation_surrounds(
@@ -130,19 +155,6 @@ module RailwayOperation
         result
       end
 
-      def send_surround(surround_definition)
-        case surround_definition
-        when Symbol
-          send(surround_definition) { yield }
-        when Array
-          surround_definition[0].send(surround_definition[1]) { yield }
-        when Proc
-          surround_definition.call(-> { yield })
-        else
-          yield
-        end
-      end
-
       def run_steps(argument, track_index:, step_index:, operation:)
         return argument if step_index > operation.last_step_index
 
@@ -163,7 +175,12 @@ module RailwayOperation
             # If a step definition is found, execute the step definition
             # note that new_argument is passed by reference, and is not
             # returned. Doing this allows us to halt the mid-step.
-            run_step(step_definition, new_argument)
+            run_step_with_surround(
+              surrounds: operation.step_surrounds[track_index],
+              step_definition: step_definition,
+              argument: new_argument,
+              step_index: step_index
+            )
 
             # then pass the modified argument to the next step.
             run_steps(
@@ -217,6 +234,34 @@ module RailwayOperation
         end
       end
 
+      def run_step_with_surround(
+        surrounds:,
+        step_definition:,
+        argument:,
+        step_index:
+      )
+        first, *rest = surrounds
+
+        result = nil
+        send_surround(first, argument, step_index) do
+          result = if rest.empty?
+                     run_step(step_definition, argument)
+                   else
+                     run_step_with_surround(rest, step_definition, argument)
+                   end
+        end
+
+        result
+      end
+
+      def run_step(step_definition, argument)
+        if step_definition[:method].is_a?(Symbol)
+          send(step_definition[:method], argument)
+        else
+          step_definition[:method].call(argument)
+        end
+      end
+
       def fail_step!
         raise FailStep
       end
@@ -235,18 +280,6 @@ module RailwayOperation
 
       def tracks
         self.class.tracks
-      end
-
-      def operation_surrounds
-        self.class.operation_surrounds
-      end
-
-      def run_step(step_definition, argument)
-        if step_definition[:method].is_a?(Symbol)
-          send(step_definition[:method], argument)
-        else
-          step_definition[:method].call(argument)
-        end
       end
     end
   end

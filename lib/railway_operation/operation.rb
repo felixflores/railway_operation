@@ -3,11 +3,11 @@
 module RailwayOperation
   class Operation
     attr_reader :name, :mapping, :tracks
-    attr_accessor :surrounds
-
+    attr_accessor :surrounds, :step_surrounds
 
     def initialize(name)
       @surrounds = []
+      @step_surrounds = []
       @tracks = []
       @track_alias = {}
       @name = name
@@ -25,6 +25,11 @@ module RailwayOperation
         success: track_alias(success),
         failure: track_alias(failure)
       }
+    end
+
+    def surround_steps(on_track:, with:)
+      @step_surrounds[track_alias(on_track)] ||= []
+      @step_surrounds[track_alias(on_track)] << with
     end
 
     def nest(operation)
