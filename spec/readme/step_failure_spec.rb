@@ -18,21 +18,21 @@ module Readme
       @someone = someone
     end
 
-    def first_method(argument)
+    def first_method(argument, **)
       argument << "Hello #{@someone}, from first_method."
     end
 
-    def another_method(argument)
+    def another_method(argument, **)
       argument << 'Hello from another_method.'
     end
 
-    def final_method(argument)
+    def final_method(argument, **)
       argument << 'Hello from final_method.'
       raise MyError
     end
 
-    def log_error(argument)
-      argument << 'Error!'
+    def log_error(argument, error:, **)
+      argument << "Error #{error.class}"
     end
   end
 end
@@ -45,7 +45,7 @@ describe Readme::FailingStep do
       [
         'Hello someone, from first_method.',
         'Hello from another_method.',
-        'Error!'
+        'Error Readme::FailingStep::MyError'
       ]
     )
   end

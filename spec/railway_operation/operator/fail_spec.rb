@@ -15,7 +15,7 @@ class StepFailure < InfiniteSteps
   add_step 1, :fail1_3
   add_step 2, :step2_4
 
-  def step0_2(argument)
+  def step0_2(argument, **)
     argument['first_mutations'] = true
     fail_step!
   end
@@ -26,7 +26,7 @@ class FailOperationMidStep < InfiniteSteps
   add_step 0, :step2
   add_step 0, :step3
 
-  def step2(argument)
+  def step2(argument, **)
     argument['value'] << 2.1
     fail_operation!
     argument['value'] << 2.2

@@ -57,15 +57,15 @@ class Surround
     self.class.log(2) << 'Surround 2 After'
   end
 
-  def step1(argument)
+  def step1(argument, **)
     argument[:step1] = true
   end
 
-  def step2(argument)
+  def step2(argument, **)
     argument[:step2] = true
   end
 
-  def step3(argument)
+  def step3(argument, **)
     argument[:step3] = true
   end
 end

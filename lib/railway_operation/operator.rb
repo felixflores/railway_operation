@@ -141,16 +141,10 @@ module RailwayOperation
       def set_operation_defaults!(operation)
         default_operation = self.class.operation(:default)
 
-        if operation.surrounds.empty?
-          operation.surrounds = default_operation.surrounds
-        end
-
-        if operation.step_surrounds.empty?
-          operation.step_surrounds = default_operation.step_surrounds
-        end
-
-        if operation.track_alias.empty?
-          operation.track_alias = default_operation.track_alias
+        [:surrounds, :step_surrounds, :track_alias].each do |attr|
+          if operation.send(attr).empty?
+            operation.send("#{attr}=", default_operation.send(attr))
+          end
         end
 
         if operation.fails_step.empty?
@@ -190,7 +184,7 @@ module RailwayOperation
         result
       end
 
-      def run_steps(argument, track_index:, step_index:, operation:)
+      def run_steps(argument, track_index:, step_index:, operation:, **options)
         return argument if step_index > operation.last_step_index
 
         # We memoize the version of the argument which was passed
@@ -219,7 +213,8 @@ module RailwayOperation
               surrounds: step_surrounds[track_index],
               step_definition: step_definition,
               argument: new_argument,
-              step_index: step_index
+              step_index: step_index,
+              **options
             )
 
             # then pass the modified argument to the next step.
@@ -227,7 +222,8 @@ module RailwayOperation
               new_argument,
               operation: operation,
               track_index: step_definition[:success] || track_index,
-              step_index: step_index + 1
+              step_index: step_index + 1,
+              **options
             )
           else
             # If there are no step definitions found for a given step
@@ -237,7 +233,8 @@ module RailwayOperation
               argument,
               operation: operation,
               track_index: track_index,
-              step_index: step_index + 1
+              step_index: step_index + 1,
+              **options
             )
           end
         rescue HaltStep
@@ -250,7 +247,8 @@ module RailwayOperation
             new_argument,
             operation: operation,
             track_index: next_track_index,
-            step_index: step_index + 1
+            step_index: step_index + 1,
+            **options
           )
         rescue HaltOperation
           # This is the version of the argument after it was potentially
@@ -262,7 +260,6 @@ module RailwayOperation
           @original_argument
         rescue => e
           raise e unless (operation.fails_step + [FailStep]).include?(e.class)
-
           next_track_index = step_definition[:failure] || track_index + 1
 
           # When a step is failed we rollback any changes performed at that step
@@ -271,7 +268,9 @@ module RailwayOperation
             argument,
             operation: operation,
             track_index: next_track_index,
-            step_index: step_index + 1
+            step_index: step_index + 1,
+            error: e,
+            **options
           )
         end
       end
@@ -280,27 +279,28 @@ module RailwayOperation
         surrounds:,
         step_definition:,
         argument:,
-        step_index:
+        step_index:,
+        **options
       )
         first, *rest = surrounds
 
         result = nil
         send_surround(first, argument, step_index) do
           result = if rest.empty?
-                     run_step(step_definition, argument)
+                     run_step(step_definition, argument, **options)
                    else
-                     run_step_with_surround(rest, step_definition, argument)
+                     run_step_with_surround(rest, step_definition, argument, **options)
                    end
         end
 
         result
       end
 
-      def run_step(step_definition, argument)
+      def run_step(step_definition, argument, **options)
         if step_definition[:method].is_a?(Symbol)
-          send(step_definition[:method], argument)
+          send(step_definition[:method], argument, **options)
         else
-          step_definition[:method].call(argument)
+          step_definition[:method].call(argument, **options)
         end
       end
 
