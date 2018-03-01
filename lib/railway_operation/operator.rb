@@ -23,7 +23,7 @@ module RailwayOperation
   #
   # SomeObject.run(my: 'values', in: 'the_hash')
   module Operator
-    CAPTURE_OPERATION_NAME = /run_*(?<operation_name>\w*)/
+    CAPTURE_OPERATION_NAME = /run_*(?<operation>\w*)/
 
     class FailStep < StandardError; end
     class HaltStep < StandardError; end
@@ -42,11 +42,11 @@ module RailwayOperation
 
       def method_missing(method_name, argument, **opts)
         raise NoMethodError, method_name unless respond_to_missing?(method_name)
-        operation_name = method_name.match(CAPTURE_OPERATION_NAME)[:operation_name]
+        operation = method_name.match(CAPTURE_OPERATION_NAME)[:operation]
 
         run(
           argument,
-          operation: operation(operation_name),
+          operation: operation,
           **opts
         )
       end
@@ -71,15 +71,23 @@ module RailwayOperation
       include DynamicRun
       include SendSurround
 
-      def operation(name)
+      def operation(op)
         @operations ||= {}
-        op = @operations[name.to_sym] ||= Operation.new(name.to_sym)
-        block_given? ? yield(op) : op
+        the_op = if op.is_a?(Operation)
+                   op
+                 else
+                   @operations[op.to_sym] ||= Operation.new(name.to_sym)
+                 end
+
+        block_given? ? yield(the_op) : the_op
       end
 
       def add_step(*args, operation: nil, **options, &block)
-        operation_name = operation.is_a?(Operation) ? operation.name : operation
-        operation(operation_name || :default).add_step(*args, **options, &block)
+        if operation.is_a?(Operation)
+          operation.add_step(*args, **options, &block)
+        else
+          operation(operation || :default).add_step(*args, **options, &block)
+        end
       end
 
       def tracks
@@ -102,6 +110,10 @@ module RailwayOperation
         operation(:default).surround_steps(on_track: on_track, with: with)
       end
 
+      def fails_step(*exceptions)
+        operation(:default).fails_step(*exceptions)
+      end
+
       def run(argument, **opts)
         new.run(argument, operation: operation(:default), **opts)
       end
@@ -111,7 +123,10 @@ module RailwayOperation
       include DynamicRun
       include SendSurround
 
-      def run(argument, operation:, track_id: 0, step_index: 0)
+      def run(argument, operation: :default, track_id: 0, step_index: 0)
+        operation = self.class.operation(operation)
+        set_operation_defaults!(operation)
+
         run_with_operation_surrounds(
           argument,
           operation: operation,
@@ -122,6 +137,26 @@ module RailwayOperation
       end
 
       private
+
+      def set_operation_defaults!(operation)
+        default_operation = self.class.operation(:default)
+
+        if operation.surrounds.empty?
+          operation.surrounds = default_operation.surrounds
+        end
+
+        if operation.step_surrounds.empty?
+          operation.step_surrounds = default_operation.step_surrounds
+        end
+
+        if operation.track_alias.empty?
+          operation.track_alias = default_operation.track_alias
+        end
+
+        if operation.fails_step.empty?
+          operation.fails_step(*default_operation.fails_step)
+        end
+      end
 
       def run_with_operation_surrounds(
         argument,
@@ -138,7 +173,7 @@ module RailwayOperation
                      run_steps(
                        argument,
                        operation: operation,
-                       track_index: operation.track_alias(track_id),
+                       track_index: operation.track_index(track_id),
                        step_index: step_index
                      )
                    else
@@ -169,6 +204,11 @@ module RailwayOperation
         # to the argument thus far
         new_argument = argument.clone
         step_definition = operation.fetch_track(track_index)[step_index]
+        step_surrounds = if operation.step_surrounds.empty?
+                           self.class.operation(:default).step_surrounds
+                         else
+                           operation.step_surrounds
+                         end
 
         begin
           if step_definition
@@ -176,7 +216,7 @@ module RailwayOperation
             # note that new_argument is passed by reference, and is not
             # returned. Doing this allows us to halt the mid-step.
             run_step_with_surround(
-              surrounds: operation.step_surrounds[track_index],
+              surrounds: step_surrounds[track_index],
               step_definition: step_definition,
               argument: new_argument,
               step_index: step_index
@@ -217,7 +257,12 @@ module RailwayOperation
           # modified by run_steps. Halting preseverse modifications performed
           # to the argument up to the point it was halted.
           new_argument
-        rescue FailStep
+        rescue FailOperation
+          # this the value of the argument prior to it being passed to run_steps
+          @original_argument
+        rescue => e
+          raise e unless (operation.fails_step + [FailStep]).include?(e.class)
+
           next_track_index = step_definition[:failure] || track_index + 1
 
           # When a step is failed we rollback any changes performed at that step
@@ -228,9 +273,6 @@ module RailwayOperation
             track_index: next_track_index,
             step_index: step_index + 1
           )
-        rescue FailOperation
-          # this the value of the argument prior to it being passed to run_steps
-          @original_argument
         end
       end
 
