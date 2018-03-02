@@ -21,11 +21,12 @@ module RailwayOperation
       success: nil,
       &block
     )
-      fetch_track(track)[next_step_index] = {
+      inject_step(
+        track,
         method: method || block,
         success: track_index(success),
         failure: track_index(failure)
-      }
+      )
     end
 
     def fails_step(*exceptions)
@@ -40,12 +41,7 @@ module RailwayOperation
     def nest(operation)
       operation.tracks.each_with_index do |t, track_index|
         t.each do |step_definition|
-          add_step(
-            track_index,
-            step_definition[:method],
-            success: step_definition[:success],
-            failure: step_definition[:failure]
-          )
+          inject_step(track_index, step_definition)
         end
       end
     end
@@ -68,12 +64,19 @@ module RailwayOperation
       tracks[index]
     end
 
+
     def next_step_index
       (tracks.compact.max_by(&:length) || []).length
     end
 
     def last_step_index
       next_step_index - 1
+    end
+
+    private
+
+    def inject_step(track, **step)
+      fetch_track(track)[next_step_index] = step
     end
   end
 end

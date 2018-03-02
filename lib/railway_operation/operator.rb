@@ -23,8 +23,6 @@ module RailwayOperation
   #
   # SomeObject.run(my: 'values', in: 'the_hash')
   module Operator
-    CAPTURE_OPERATION_NAME = /run_*(?<operation>\w*)/
-
     class FailStep < StandardError; end
     class HaltStep < StandardError; end
     class HaltOperation < StandardError; end
@@ -35,50 +33,41 @@ module RailwayOperation
       base.send :include, InstanceMethods
     end
 
+    # The DynamicRun allows the module which includes it to have a method
+    # with that is run_<something>.
+    #
+    # ex: run_variation1, run_something, run_my_operation_name
     module DynamicRun
+      CAPTURE_OPERATION_NAME = /run_*(?<operation>\w*)/
+
       def respond_to_missing?(method_name, _include_private = false)
         method_name.match(CAPTURE_OPERATION_NAME)
       end
 
       def method_missing(method_name, argument, **opts)
-        raise NoMethodError, method_name unless respond_to_missing?(method_name)
         operation = method_name.match(CAPTURE_OPERATION_NAME)[:operation]
 
-        run(
-          argument,
-          operation: operation,
-          **opts
-        )
-      end
-    end
-
-    module SendSurround
-      def send_surround(surround_definition, *args)
-        case surround_definition
-        when Symbol
-          send(surround_definition, *args) { yield }
-        when Array
-          surround_definition[0].send(surround_definition[1], *args) { yield }
-        when Proc
-          surround_definition.call(-> { yield }, *args)
+        if operation
+          run(argument, operation: operation, **opts)
         else
-          yield
+          super
         end
       end
     end
 
     module ClassMethods
       include DynamicRun
-      include SendSurround
 
       def operation(op)
         @operations ||= {}
+
         the_op = if op.is_a?(Operation)
                    op
                  else
-                   @operations[op.to_sym] ||= Operation.new(name.to_sym)
+                   @operations[op.to_sym] ||= Operation.new(op.to_sym)
                  end
 
+        # See operation/nested_operation_spec.rb for details for block syntax
         block_given? ? yield(the_op) : the_op
       end
 
@@ -121,7 +110,6 @@ module RailwayOperation
 
     module InstanceMethods
       include DynamicRun
-      include SendSurround
 
       def run(argument, operation: :default, track_id: 0, step_index: 0)
         operation = self.class.operation(operation)
@@ -322,6 +310,19 @@ module RailwayOperation
 
       def tracks
         self.class.tracks
+      end
+
+      def send_surround(surround_definition, *args)
+        case surround_definition
+        when Symbol
+          send(surround_definition, *args) { yield }
+        when Array
+          surround_definition[0].send(surround_definition[1], *args) { yield }
+        when Proc
+          surround_definition.call(-> { yield }, *args)
+        else
+          yield
+        end
       end
     end
   end
