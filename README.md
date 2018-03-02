@@ -2,7 +2,7 @@
 
 # RailwayOperation
 
-This gem allows you to declare and compose a set of operations into an function execution tree inspired by the railway oriented programming pattern ([https://fsharpforfunandprofit.com/rop/](https://fsharpforfunandprofit.com/rop/)) for more details.
+This gem allows you to declare and compose a set of operations into a functional execution tree inspired by the railway oriented programming pattern. See ([https://fsharpforfunandprofit.com/rop/](https://fsharpforfunandprofit.com/rop/)) for more details.
 
 ## Basic Usage
 Let's say we have the following class
@@ -29,7 +29,7 @@ module Readme
 end
 ```
 
-We could perform the follow set of operations
+We could perform the follow chain of execution, to yield the following result.
 
 ```ruby
 synopsis = Readme::Synopsis.new('Felix')
@@ -46,7 +46,7 @@ result == [
 ]
 ```
 
-RailwayOperation provides a way for you to declare the same execution chain as a series of steps in an operation. By doing `include RailwayOperation::Operator` to your class, the `.add_step` class method is made available and a corresponding `#run` and `.run` method will execution chain will be performed.
+RailwayOperation provides a way for you to declare the same execution chain as a series of steps in an operation. By doing `include RailwayOperation::Operator` to your class,  the `.add_step` class method is made available and a corresponding `#run` and `.run` method could be used to perform the execution chain.
 
 ```ruby
 module Readme
@@ -57,15 +57,15 @@ module Readme
     add_step 0, :another_method
     add_step 0, :final_method
 
-    def first_method(argument)
+    def first_method(argument, **)
       argument << 'Hello from first_method.'
     end
 
-    def another_method(argument)
+    def another_method(argument, **)
       argument << 'Hello from another_method.'
     end
 
-    def final_method(argument)
+    def final_method(argument, **)
       argument << 'Hello from final_method.'
     end
   end
@@ -73,46 +73,60 @@ end
 
 result = Readme::Synopsis.new('Felix').run(argument)
 
-result == [
+result, info == [
   'Hello Felix, from first_method.'
   'Hello from another_method.'
   'Hello from final_method.'
 ]
 ```
 
-Additionally, if your class does not require any arguments in its initializer you can call
+Additionally, if your class does not require any arguments in its initializer you can call.
 
 ```ruby
-result = Readme::Synopsis.run(argument)
+result, info = Readme::Synopsis.run(argument)
 ```
+
+*Let's ignore the info value for now. We will cover that later.*
 
 ## Handling Exceptions
 Let's say we want to log an error in case something goes wrong along the execution chain.
 
 ```ruby
 module Readme
-  class Synopsis
+  class FailingStep
     include RailwayOperation::Operator
     class MyError < StandardError; end
+
+    fails_step MyError
 
     add_step 0, :first_method
     add_step 0, :another_method
     add_step 0, :final_method
+    add_step 1, :log_error
 
-    def first_method(argument)
-      argument << 'Hello from first_method.'
+    def initialize(someone = 'someone')
+      @someone = someone
     end
 
-    def another_method(argument)
+    def first_method(argument, **)
+      argument << "Hello #{@someone}, from first_method."
+    end
+
+    def another_method(argument, **)
       argument << 'Hello from another_method.'
+    end
+
+    def final_method(argument, **)
+      argument << 'Hello from final_method.'
       raise MyError
     end
 
-    def final_method(argument)
-      argument << 'Hello from final_method.'
+    def log_error(argument, error:, **)
+      argument << "Error #{error.class}"
     end
   end
 end
+```
 
 ## Installation
 
