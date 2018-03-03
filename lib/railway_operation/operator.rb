@@ -71,11 +71,13 @@ module RailwayOperation
         block_given? ? yield(the_op) : the_op
       end
 
+      alias get_operation operation
       def add_step(*args, operation: nil, **options, &block)
         if operation.is_a?(Operation)
           operation.add_step(*args, **options, &block)
         else
-          operation(operation || :default).add_step(*args, **options, &block)
+          get_operation(operation || :default)
+            .add_step(*args, **options, &block)
         end
       end
 
@@ -112,13 +114,13 @@ module RailwayOperation
       include DynamicRun
 
       def run(argument, operation: :default, track_id: 0, step_index: 0)
-        operation = self.class.operation(operation)
-        set_operation_defaults!(operation)
+        op = self.class.operation(operation)
+        operation_defaults!(op)
 
-        run_with_operation_surrounds(
+        operation_surrounds(
           argument,
-          operation: operation,
-          operation_surrounds: operation.surrounds,
+          operation: op,
+          operation_surrounds: op.surrounds,
           track_id: track_id,
           step_index: step_index
         )
@@ -126,10 +128,11 @@ module RailwayOperation
 
       private
 
-      def set_operation_defaults!(operation)
+      def operation_defaults!(operation)
         default_operation = self.class.operation(:default)
+        return unless default_operation
 
-        [:surrounds, :step_surrounds, :track_alias].each do |attr|
+        %i[surrounds step_surrounds track_alias].each do |attr|
           if operation.send(attr).empty?
             operation.send("#{attr}=", default_operation.send(attr))
           end
@@ -140,7 +143,7 @@ module RailwayOperation
         end
       end
 
-      def run_with_operation_surrounds(
+      def operation_surrounds(
         argument,
         operation:,
         operation_surrounds:,
@@ -159,7 +162,7 @@ module RailwayOperation
                        step_index: step_index
                      )
                    else
-                     run_with_operation_surrounds(
+                     operation_surrounds(
                        argument,
                        operation: operation,
                        operation_surrounds: rest,

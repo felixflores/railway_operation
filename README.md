@@ -88,8 +88,8 @@ result, info = Readme::Synopsis.run(argument)
 
 *Let's ignore the info value for now. We will cover that later.*
 
-## Handling Exceptions
-Let's say we want to log an error in case something goes wrong along the execution chain.
+## Multitrack Execution
+Let's say we want to log an error in case something goes wrong along the execution chain. We can modify our class with the following
 
 ```ruby
 module Readme
@@ -102,24 +102,9 @@ module Readme
     add_step 0, :first_method
     add_step 0, :another_method
     add_step 0, :final_method
-    add_step 1, :log_error
+    add_step 1, :log_error # note that add_step's parmeter is 1
 
-    def initialize(someone = 'someone')
-      @someone = someone
-    end
-
-    def first_method(argument, **)
-      argument << "Hello #{@someone}, from first_method."
-    end
-
-    def another_method(argument, **)
-      argument << 'Hello from another_method.'
-    end
-
-    def final_method(argument, **)
-      argument << 'Hello from final_method.'
-      raise MyError
-    end
+    ...
 
     def log_error(argument, error:, **)
       argument << "Error #{error.class}"
@@ -127,6 +112,7 @@ module Readme
   end
 end
 ```
+
 
 ## Installation
 
