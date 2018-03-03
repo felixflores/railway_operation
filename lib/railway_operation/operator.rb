@@ -55,6 +55,15 @@ module RailwayOperation
       end
     end
 
+    # The operator class method allows classes which include this module
+    # to delegate actions to the default operation of the @operations
+    # array.
+    #
+    # The default operation is a normal RailwayOperation::Operation classes
+    # however it is used to store step declarations as well as other operation
+    # attributes such as track_alias, fails_step, etc. If other operations of
+    # the class do not declare values for these attributes, the values
+    # assigned to the default operation is used.
     module ClassMethods
       include DynamicRun
 
@@ -72,12 +81,12 @@ module RailwayOperation
       end
 
       alias get_operation operation
-      def add_step(*args, operation: nil, **options, &block)
+      def add_step(*args, operation: nil, **info, &block)
         if operation.is_a?(Operation)
-          operation.add_step(*args, **options, &block)
+          operation.add_step(*args, **info, &block)
         else
           get_operation(operation || :default)
-            .add_step(*args, **options, &block)
+            .add_step(*args, **info, &block)
         end
       end
 
@@ -110,6 +119,12 @@ module RailwayOperation
       end
     end
 
+    # The RailwayOperation::Operator instance methods exposes a single
+    # method - RailwayOperation::Operator#run
+    #
+    # This method is intended to run the default operation. Although it's
+    # possible to invoke ohter operations of the class the method missing
+    # approach is preffered (ie run_<operation_name>)
     module InstanceMethods
       include DynamicRun
 
@@ -132,14 +147,14 @@ module RailwayOperation
         default_operation = self.class.operation(:default)
         return unless default_operation
 
+        if operation.fails_step.empty?
+          operation.fails_step(*default_operation.fails_step)
+        end
+
         %i[surrounds step_surrounds track_alias].each do |attr|
           if operation.send(attr).empty?
             operation.send("#{attr}=", default_operation.send(attr))
           end
-        end
-
-        if operation.fails_step.empty?
-          operation.fails_step(*default_operation.fails_step)
         end
       end
 
@@ -175,7 +190,7 @@ module RailwayOperation
         result
       end
 
-      def run_steps(argument, track_index:, step_index:, operation:, **options)
+      def run_steps(argument, track_index:, step_index:, operation:, **info)
         return argument if step_index > operation.last_step_index
 
         # We memoize the version of the argument which was passed
@@ -205,7 +220,7 @@ module RailwayOperation
               step_definition: step_definition,
               argument: new_argument,
               step_index: step_index,
-              **options
+              **info
             )
 
             # then pass the modified argument to the next step.
@@ -214,7 +229,7 @@ module RailwayOperation
               operation: operation,
               track_index: step_definition[:success] || track_index,
               step_index: step_index + 1,
-              **options
+              **info
             )
           else
             # If there are no step definitions found for a given step
@@ -225,7 +240,7 @@ module RailwayOperation
               operation: operation,
               track_index: track_index,
               step_index: step_index + 1,
-              **options
+              **info
             )
           end
         rescue HaltStep
@@ -239,7 +254,7 @@ module RailwayOperation
             operation: operation,
             track_index: next_track_index,
             step_index: step_index + 1,
-            **options
+            **info
           )
         rescue HaltOperation
           # This is the version of the argument after it was potentially
@@ -248,7 +263,7 @@ module RailwayOperation
           new_argument
         rescue FailOperation
           # this the value of the argument prior to it being passed to run_steps
-          @original_argument
+          [@original_argument, info]
         rescue => e
           raise e unless (operation.fails_step + [FailStep]).include?(e.class)
           next_track_index = step_definition[:failure] || track_index + 1
@@ -261,7 +276,7 @@ module RailwayOperation
             track_index: next_track_index,
             step_index: step_index + 1,
             error: e,
-            **options
+            **info
           )
         end
       end
@@ -271,27 +286,33 @@ module RailwayOperation
         step_definition:,
         argument:,
         step_index:,
-        **options
+        **info
       )
         first, *rest = surrounds
 
         result = nil
+
         send_surround(first, argument, step_index) do
           result = if rest.empty?
-                     run_step(step_definition, argument, **options)
+                     run_step(step_definition, argument, **info)
                    else
-                     run_step_with_surround(rest, step_definition, argument, **options)
+                     run_step_with_surround(
+                       rest,
+                       step_definition,
+                       argument,
+                       **info
+                     )
                    end
         end
 
-        result
+        [result, info]
       end
 
-      def run_step(step_definition, argument, **options)
+      def run_step(step_definition, argument, **info)
         if step_definition[:method].is_a?(Symbol)
-          send(step_definition[:method], argument, **options)
+          send(step_definition[:method], argument, **info)
         else
-          step_definition[:method].call(argument, **options)
+          step_definition[:method].call(argument, **info)
         end
       end
 

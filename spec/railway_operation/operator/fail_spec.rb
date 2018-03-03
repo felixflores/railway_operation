@@ -46,7 +46,7 @@ describe 'fail RailwayOperation::Operator' do
           { 'value' => %i[step0_0 fail1_3] }
         end
         it 'moves to the track 1 index higher' do
-          result = StepFailure.run({})
+          result, info = StepFailure.run({})
           expect(result).to eq(failure_steps)
         end
 
@@ -62,7 +62,7 @@ describe 'fail RailwayOperation::Operator' do
         let(:argument) { { the: :agument } }
 
         it 'does not maintain any changes to the argument' do
-          result = FailOperationMidStep.run(argument)
+          result, info = FailOperationMidStep.run(argument)
           expect(result).to eq(argument)
         end
       end
