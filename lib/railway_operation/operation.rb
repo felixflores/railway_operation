@@ -2,81 +2,63 @@
 
 module RailwayOperation
   class Operation
-    attr_reader :name, :mapping, :tracks
-    attr_accessor :surrounds, :step_surrounds, :track_alias
+    extend Forwardable
+
+    attr_accessor :name,
+                  :fails_step,
+                  :step_exceptions,
+                  :surrounds,
+                  :surrounds_step,
+                  :track_alias,
+                  :tracks
 
     def initialize(name)
-      @surrounds = []
-      @step_surrounds = []
-      @tracks = []
-      @track_alias = {}
       @fails_step = []
       @name = name
+      @surrounds = []
+      @surrounds_step = {}
+      @track_alias = {}
+      @tracks = FilledMatrix.new
+    end
+
+    def [](track_identifier, step_index)
+      tracks[
+        track_alias[track_identifier] || track_indentifier,
+        step_index
+      ]
+    end
+
+    def []=(track_identifier, step_index, step)
+      tracks[
+        track_alias[track_identifier] || track_identifier,
+        step_index
+      ] = step
     end
 
     def add_step(
-      track,
-      method = nil,
-      failure: nil,
+      track_indentifier,
+      method,
       success: nil,
+      failure: nil,
       &block
     )
-      inject_step(
-        track,
+      self[track_indentifier, last_step_index + 1] = {
         method: method || block,
-        success: track_index(success),
-        failure: track_index(failure)
-      )
-    end
-
-    def fails_step(*exceptions)
-      @fails_step += exceptions
-    end
-
-    def surround_steps(on_track:, with:)
-      @step_surrounds[track_index(on_track)] ||= []
-      @step_surrounds[track_index(on_track)] << with
+        success: success,
+        failure: failure
+      }
     end
 
     def nest(operation)
-      operation.tracks.each_with_index do |t, track_index|
-        t.each do |step_definition|
-          inject_step(track_index, step_definition)
+      operation.tracks.each_with_index do |track, track_index|
+        track.each do |s|
+          tracks[track_index, last_step_index + 1] = s
         end
       end
     end
 
-    def alias_tracks(mapping = {})
-      @track_alias.merge!(mapping)
-    end
-
-    def track_index(identifier)
-      if identifier.is_a?(Numeric)
-        identifier
-      else
-        @track_alias[identifier]
-      end
-    end
-
-    def fetch_track(identifier)
-      index = identifier.is_a?(Numeric) ? identifier : alias_tracks[identifier]
-      tracks[index] ||= []
-      tracks[index]
-    end
-
-
-    def next_step_index
-      (tracks.compact.max_by(&:length) || []).length
-    end
-
     def last_step_index
-      next_step_index - 1
-    end
-
-    private
-
-    def inject_step(track, **step)
-      fetch_track(track)[next_step_index] = step
+      tracks.max_column_index
     end
   end
 end

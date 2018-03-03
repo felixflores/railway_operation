@@ -128,7 +128,7 @@ module RailwayOperation
     module InstanceMethods
       include DynamicRun
 
-      def run(argument, operation: :default, track_id: 0, step_index: 0)
+      def run(argument, operation: :default, track_identifier: 0, step_index: 0)
         op = self.class.operation(operation)
         operation_defaults!(op)
 
@@ -136,7 +136,7 @@ module RailwayOperation
           argument,
           operation: op,
           operation_surrounds: op.surrounds,
-          track_id: track_id,
+          track_identifier: track_identifier,
           step_index: step_index
         )
       end
@@ -151,9 +151,9 @@ module RailwayOperation
           operation.fails_step(*default_operation.fails_step)
         end
 
-        %i[surrounds step_surrounds track_alias].each do |attr|
-          if operation.send(attr).empty?
-            operation.send("#{attr}=", default_operation.send(attr))
+        %i[surrounds surrounds_step track_alias].each do |attr|
+          if operation.public_send(attr).empty?
+            operation.public_send("#{attr}=", default_operation.public_send(attr))
           end
         end
       end
@@ -162,7 +162,7 @@ module RailwayOperation
         argument,
         operation:,
         operation_surrounds:,
-        track_id:,
+        track_identifier:,
         step_index:
       )
         first, *rest = operation_surrounds
@@ -173,7 +173,7 @@ module RailwayOperation
                      run_steps(
                        argument,
                        operation: operation,
-                       track_index: operation.track_index(track_id),
+                       track_identifier: track_identifier,
                        step_index: step_index
                      )
                    else
@@ -190,7 +190,7 @@ module RailwayOperation
         result
       end
 
-      def run_steps(argument, track_index:, step_index:, operation:, **info)
+      def run_steps(argument, track_identifier:, step_index:, operation:, **info)
         return argument if step_index > operation.last_step_index
 
         # We memoize the version of the argument which was passed
@@ -310,7 +310,7 @@ module RailwayOperation
 
       def run_step(step_definition, argument, **info)
         if step_definition[:method].is_a?(Symbol)
-          send(step_definition[:method], argument, **info)
+          public_send(step_definition[:method], argument, **info)
         else
           step_definition[:method].call(argument, **info)
         end
