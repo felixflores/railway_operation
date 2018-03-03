@@ -15,7 +15,7 @@ class StepFailure < InfiniteSteps
   add_step 1, :fail1_3
   add_step 2, :step2_4
 
-  def step0_2(argument)
+  def step0_2(argument, **)
     argument['first_mutations'] = true
     fail_step!
   end
@@ -26,7 +26,7 @@ class FailOperationMidStep < InfiniteSteps
   add_step 0, :step2
   add_step 0, :step3
 
-  def step2(argument)
+  def step2(argument, **)
     argument['value'] << 2.1
     fail_operation!
     argument['value'] << 2.2
@@ -46,7 +46,7 @@ describe 'fail RailwayOperation::Operator' do
           { 'value' => %i[step0_0 fail1_3] }
         end
         it 'moves to the track 1 index higher' do
-          result = StepFailure.run({})
+          result, info = StepFailure.run({})
           expect(result).to eq(failure_steps)
         end
 
@@ -62,7 +62,7 @@ describe 'fail RailwayOperation::Operator' do
         let(:argument) { { the: :agument } }
 
         it 'does not maintain any changes to the argument' do
-          result = FailOperationMidStep.run(argument)
+          result, info = FailOperationMidStep.run(argument)
           expect(result).to eq(argument)
         end
       end

@@ -22,7 +22,7 @@ class ExplicitFailTrack < InfiniteSteps
   add_step 1, :skip3
   add_step 2, :step4
 
-  def step2(_argument)
+  def step2(_argument, **)
     fail_step!
   end
 end
@@ -33,7 +33,7 @@ class DistantExplicitFailTrack < InfiniteSteps
   add_step 0, :skip3
   add_step 1, :skip4
 
-  def step2(_argument)
+  def step2(_argument, **)
     fail_step!
   end
 end

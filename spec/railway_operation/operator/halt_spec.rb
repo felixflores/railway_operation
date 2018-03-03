@@ -7,7 +7,7 @@ class MidStepHalt < InfiniteSteps
   add_step 0, :step2
   add_step 0, :step3
 
-  def step2(argument)
+  def step2(argument, **)
     argument['value'] << 2.1
     halt_step!
     argument['value'] << 2.2
@@ -19,7 +19,7 @@ class HaltOperationMidStep < InfiniteSteps
   add_step 0, :step2
   add_step 0, :step3
 
-  def step2(argument)
+  def step2(argument, **)
     argument['value'] << 2.1
     halt_operation!
     argument['value'] << 2.2
