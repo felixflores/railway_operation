@@ -3,8 +3,9 @@
 require 'spec_helper'
 
 class AClass
-  def self.call(argument, **)
+  def self.call(argument, **info)
     argument[:in_class_call] = true
+    [argument, info]
   end
 end
 
@@ -13,13 +14,22 @@ class POROClass
 
   add_step 0, :step1
   add_step 0, AClass
-  add_step 0, ->(argument, **) { argument[:in_lambda] = true }
-  add_step 0 do |argument|
+  add_step(
+    0,
+    lambda do |argument, **info|
+      argument[:in_lambda] = true
+      [argument, info]
+    end
+  )
+
+  add_step(0) do |argument, **info|
     argument[:in_block] = true
+    [argument, info]
   end
 
-  def step1(argument, **)
+  def step1(argument, **info)
     argument[:in_normal_step] = true
+    [argument, info]
   end
 end
 
@@ -34,7 +44,8 @@ describe 'lambda step RailwayOperation::Operator' do
       in_block: true
     )
 
-    expect(POROClass.run(argument)).to eq(new_argument)
+    result, _info = POROClass.run(argument)
+    expect(result).to eq(new_argument)
   end
 end
 

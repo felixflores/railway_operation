@@ -24,14 +24,14 @@ end
 #      end
 #    end
 #  end
-class Surround
+class SurroundTest
   extend FakeLogger
   include RailwayOperation::Operator
 
-  surround_operation :surround1
-  surround_operation :surround2
-  surround_operation [SampleLogger, :record]
-  surround_operation do |operation| # This is a block surround
+  operation_surrounds << :surround1
+  operation_surrounds << :surround2
+  operation_surrounds << [SampleLogger, :record]
+  operation_surrounds << lambda do |operation|
     log_from_block('Before Block Surround')
     operation.call
     log_from_block('After Block Surround')
@@ -57,24 +57,31 @@ class Surround
     self.class.log(2) << 'Surround 2 After'
   end
 
-  def step1(argument, **)
+  def step1(argument, **info)
     argument[:step1] = true
+    [argument, info]
   end
 
-  def step2(argument, **)
+  def step2(argument, **info)
     argument[:step2] = true
+    [argument, info]
   end
 
-  def step3(argument, **)
+  def step3(argument, **info)
     argument[:step3] = true
+    [argument, info]
   end
 end
 
 describe 'surround operation RailwayOperation::Operator' do
   context 'operation' do
-    let!(:result) { Surround.run({}) }
+    let!(:result) do
+      result, _info = SurroundTest.run({})
+      result
+    end
+
     after(:each) do
-      Surround.clear_log
+      SurroundTest.clear_log
       SampleLogger.clear_log
     end
 
@@ -88,11 +95,11 @@ describe 'surround operation RailwayOperation::Operator' do
 
     context 'instance method surrounds' do
       it 'surrounds operation with speficied instance method' do
-        expect(Surround.log(1)).to eq(['Surround 1 Before', 'Surround 1 After'])
+        expect(SurroundTest.log(1)).to eq(['Surround 1 Before', 'Surround 1 After'])
       end
 
       it 'surrounds operation can be nested' do
-        expect(Surround.log(2)).to eq(['Surround 2 Before', 'Surround 2 After'])
+        expect(SurroundTest.log(2)).to eq(['Surround 2 Before', 'Surround 2 After'])
       end
     end
 
@@ -102,7 +109,7 @@ describe 'surround operation RailwayOperation::Operator' do
 
     context 'block surrounds' do
       it {
-        expect(Surround.log(3)).to eq(
+        expect(SurroundTest.log(3)).to eq(
           ['Before Block Surround', 'After Block Surround']
         )
       }

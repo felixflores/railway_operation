@@ -2,18 +2,6 @@
 
 require 'spec_helper'
 
-class MidStepHalt < InfiniteSteps
-  add_step 0, :step1
-  add_step 0, :step2
-  add_step 0, :step3
-
-  def step2(argument, **)
-    argument['value'] << 2.1
-    halt_step!
-    argument['value'] << 2.2
-  end
-end
-
 class HaltOperationMidStep < InfiniteSteps
   add_step 0, :step1
   add_step 0, :step2
@@ -27,16 +15,9 @@ class HaltOperationMidStep < InfiniteSteps
 end
 
 describe 'halt RailwayOperation::Operator' do
-  context 'halt step' do
-    it 'maintains within step so far and continues to next step' do
-      result = MidStepHalt.run({})
-      expect(result['value']).to eq([:step1, 2.1, :step3])
-    end
-  end
-
   context 'halt operation' do
     it 'maintains within step so far and does not continue to next step' do
-      result = HaltOperationMidStep.run({})
+      result, _info = HaltOperationMidStep.run({})
       expect(result['value']).to eq([:step1, 2.1])
     end
   end

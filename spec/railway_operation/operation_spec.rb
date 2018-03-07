@@ -18,12 +18,13 @@ context '.track' do
       { method: :track_0_0, success: nil, failure: nil },
       { method: :track_0_1, success: 2, failure: nil },
       nil,
-      { method: :track_0_3, success: 4, failure: nil }
+      { method: :track_0_3, success: 4, failure: nil },
+      nil
     ]
   end
 
   let(:track1) do
-    [nil, nil, { method: :track_1_2, success: nil, failure: 1 }]
+    [nil, nil, { method: :track_1_2, success: nil, failure: 1 }, nil, nil]
   end
 
   let(:track2) do
@@ -31,7 +32,10 @@ context '.track' do
   end
 
   it 'allows tracks to be declare' do
-    expect(DeclaringTracks.tracks).to eq([track0, track1, track2])
+    DeclaringTracks.tracks.each_with_index do |track, index|
+      current_track = send("track#{index}".to_sym)
+      expect(track).to eq(current_track), "error on #{index}"
+    end
   end
 end
 

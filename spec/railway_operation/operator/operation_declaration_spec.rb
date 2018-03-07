@@ -25,25 +25,25 @@ end
 
 describe 'operation declaration RailwayOperation::Operator' do
   it 'allows default operation to be defined implicitly' do
-    result = Sample.run({})
+    result, _info = Sample.run({})
     expect(result['value']).to eq(%i[method1 method2 method3])
 
-    result_missing_method = Sample.run_default({})
+    result_missing_method, _info = Sample.run_default({})
     expect(result_missing_method).to eq(result)
   end
 
   it 'allow operation declaration using operation option' do
-    result = Sample.run_variation2({})
+    result, _info = Sample.run_variation2({})
     expect(result['value']).to eq(%i[method2 method1 method3])
   end
 
   it 'allow operation declaration using block syntax' do
-    result = Sample.run_variation1({})
+    result, _info = Sample.run_variation1({})
     expect(result['value']).to eq(%i[method3 method2 method1])
   end
 
   it 'allows inline operation declaration' do
-    result = Sample.run_variation3({})
+    result, _info = Sample.run_variation3({})
     expect(result['value']).to eq(%i[method1 method1 method3])
   end
 end

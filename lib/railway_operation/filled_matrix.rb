@@ -2,6 +2,8 @@
 
 module RailwayOperation
   class FilledMatrix
+    include Enumerable
+
     def initialize(*rows)
       @matrix = rows
       ensure_rows_length_are_equal!
@@ -22,6 +24,12 @@ module RailwayOperation
 
     def to_a
       @matrix
+    end
+
+    def each
+      @matrix.each do |row|
+        yield row
+      end
     end
 
     def max_column_index

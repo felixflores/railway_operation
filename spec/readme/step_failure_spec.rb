@@ -7,7 +7,7 @@ module Readme
     include RailwayOperation::Operator
     class MyError < StandardError; end
 
-    fails_step MyError
+    fails_step << MyError
 
     add_step 0, :first_method
     add_step 0, :another_method
@@ -18,12 +18,14 @@ module Readme
       @someone = someone
     end
 
-    def first_method(argument, **)
+    def first_method(argument, **info)
       argument << "Hello #{@someone}, from first_method."
+      [argument, info]
     end
 
-    def another_method(argument, **)
+    def another_method(argument, **info)
       argument << 'Hello from another_method.'
+      [argument, info]
     end
 
     def final_method(argument, **)
@@ -31,8 +33,9 @@ module Readme
       raise MyError
     end
 
-    def log_error(argument, error:, **)
+    def log_error(argument, error:, **info)
       argument << "Error #{error.class}"
+      [argument, info]
     end
   end
 end
@@ -40,7 +43,8 @@ end
 describe Readme::FailingStep do
   let(:argument) { [] }
   it 'executes methods in the order they are specified' do
-    result = described_class.run(argument)
+    result, _info = described_class.run(argument)
+
     expect(result).to eq(
       [
         'Hello someone, from first_method.',
