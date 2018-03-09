@@ -5,23 +5,6 @@ module RailwayOperation
   # it extends that ruby class with the necessary methods to allow
   # objects to conform to the railway oriented convention.
   # See https://vimeo.com/97344498 for a high level overview
-  #
-  # Sample usage
-  #
-  # class SomeObject
-  #   include RailwayOperation::Operator
-  #
-  #   track_alias process_1: 0, process_2: 1, process_3: 2
-  #
-  #   track :process_1, Something.new
-  #   track :process_1, ValidateObject
-  #   track :process_1, :a_method
-  #   track :process_2, LogFailure
-  #   track :process_1, :persist!
-  #   track :process_1, LogSuccess
-  # end
-  #
-  # SomeObject.run(my: 'values', in: 'the_hash')
   module Operator
     class FailStep < StandardError; end
     class HaltOperation < StandardError; end
@@ -136,17 +119,14 @@ module RailwayOperation
 
       def operation_with_defaults!(operation)
         default_operation = self.class.default_operation
-        return operation if operation == default_operation || default_operation.nil?
+        return operation if operation == default_operation
 
         op = operation.clone
 
-        op.fails_step(*default_operation.fails_step) if op.fails_step.empty?
-
-        %i[operation_surrounds step_surrounds track_alias].each do |attr|
-          if op.public_send(attr).empty?
-            op.public_send("#{attr}=", default_operation.public_send(attr))
-          end
-        end
+        op.fails_step ||= default_operation.fails_step
+        op.operation_surrounds ||= default_operation.operation_surrounds
+        op.step_surrounds ||= default_operation.step_surrounds
+        op.track_alias ||= op.track_alias
 
         op
       end
@@ -162,26 +142,23 @@ module RailwayOperation
         # this allows us to return it in case the the operation fails
         @original_argument ||= argument.clone # see rescue FailOperation
 
-        # We are doing the clone early so that the new_argument
-        # could be mutated in context of the operation step,
-        # SwitchTrack or HaltExecution and maintain the mutations
-        # to the argument thus far
-        new_argument = argument.clone
         step_definition = operation[track_identifier, step_index]
 
         begin
           if step_definition
-            # If a step definition is found, execute the step definition
-            # note that new_argument is passed by reference, and is not
-            # returned. Doing this allows us to halt the mid-step.
+            new_argument = argument.clone
+
             step_surrounds = operation.step_surrounds[track_identifier]
             step_surrounds += operation.step_surrounds['*']
 
-            wrap(with: step_surrounds, pass_through: [new_argument, info]) do |wrapped_args, wrapped_info|
-              new_argument, info = run_step(step_definition, wrapped_args, wrapped_info)
+            wrap(
+              with: step_surrounds, pass_through: [new_argument, info]
+            ) do |wrapped_args, wrapped_info|
+              new_argument, info = run_step(
+                step_definition, wrapped_args, wrapped_info
+              )
             end
 
-            # then pass the modified argument to the next step.
             run_steps(
               new_argument,
               info,
@@ -205,13 +182,12 @@ module RailwayOperation
           # This is the version of the argument after it was potentially
           # modified by run_steps. Halting preseverse modifications performed
           # to the argument up to the point it was halted.
-          new_argument
+          [new_argument, info]
         rescue FailOperation
           # this the value of the argument prior to it being passed to run_steps
           [@original_argument, info]
         rescue => e
           raise e unless (operation.fails_step + [FailStep]).include?(e.class)
-          next_track_index = step_definition[:failure] || track_identifier + 1
 
           # When a step is failed we rollback any changes performed at that step
           # and continue execution to of the proceeding steps.
@@ -221,8 +197,8 @@ module RailwayOperation
             argument,
             info,
             operation: operation,
-            track_identifier: next_track_index,
-            step_index: step_index + 1,
+            track_identifier: step_definition[:failure] || operation.successor_track(track_identifier),
+            step_index: step_index + 1
           )
         end
       end

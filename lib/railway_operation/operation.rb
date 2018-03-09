@@ -1,35 +1,12 @@
 # frozen_string_literal: true
 
 module RailwayOperation
-  class EnsuredHash
-    def initialize(&block)
-      @default = block
-      @value = Hash.new
-    end
-
-    def [](key)
-      @value[key] ||= @default.call
-      @value[key]
-    end
-
-    def respond_to_missing?(method, _include_private = false)
-      @value.respond_to?(method)
-    end
-
-    def method_missing(method, *args)
-      if respond_to_missing?(method)
-        @value.send(method, *args)
-      else
-        super
-      end
-    end
-  end
-
+  # This is the value object that holds the information necessary to run an operation
   class Operation
     extend Forwardable
 
-    attr_accessor :name,
-                  :fails_step,
+    attr_reader :name
+    attr_accessor :fails_step,
                   :step_exceptions,
                   :operation_surrounds,
                   :step_surrounds,
@@ -37,24 +14,34 @@ module RailwayOperation
                   :tracks
 
     def initialize(name)
-      @fails_step = []
-      @name = name.to_sym
-      @operation_surrounds = []
-      @step_surrounds = EnsuredHash.new { [] }
+      @name = underscore(name)
+
+      @fails_step = TypedArray.new(
+        ensure_type_is: Exception,
+        error_message: 'Step failures must be an kind of Exception'
+      )
+
+      @operation_surrounds = TypedArray.new(
+        ensure_type_is: [Symbol, Proc, String, Array],
+        error_message: 'Invalid operation surround declaration, must' \
+          'be of type Symbol, Proc, Lambda, or String'
+      )
+
+      @step_surrounds = EnsuredAccess.new({}) { [] }
       @track_alias = {}
       @tracks = FilledMatrix.new
     end
 
     def [](track_identifier, step_index)
       tracks[
-        track_alias[track_identifier] || track_identifier,
+        track_index(track_identifier),
         step_index
       ]
     end
 
     def []=(track_identifier, step_index, step)
       tracks[
-        track_alias[track_identifier] || track_identifier,
+        track_index(track_identifier),
         step_index
       ] = step
     end
@@ -87,6 +74,28 @@ module RailwayOperation
 
     def last_step_index
       tracks.max_column_index
+    end
+
+    def successor_track(track_identifier)
+      track_index(track_identifier) + 1
+    end
+
+    def track_index(track_identifier)
+      if track_identifier.is_a?(Numeric)
+        track_identifier
+      else
+        @track_alias[track_identifier]
+      end
+    end
+
+    private
+
+    def underscore(string)
+      string
+        .to_s
+        .gsub(/\s+/, '_')
+        .downcase
+        .to_sym
     end
   end
 end
