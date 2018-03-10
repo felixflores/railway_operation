@@ -14,13 +14,21 @@ module RailwayOperation
                   :track_alias,
                   :tracks
 
-    def new(operation_or_name)
+    def self.new(operation_or_name)
       return operation_or_name if operation_or_name.is_a?(Operation)
       super
     end
 
+    def self.format_name(op_or_name)
+      if op_or_name.respond_to?(:name)
+        op_or_name.name
+      else
+        op_or_name.to_s.gsub(/\s+/, '_').downcase.to_sym
+      end
+    end
+
     def initialize(name)
-      @name = underscore(name)
+      @name = self.class.format_name(name)
 
       @fails_step = TypedArray.new(
         ensure_type_is: Exception,
@@ -88,16 +96,6 @@ module RailwayOperation
       else
         @track_alias[track_identifier]
       end
-    end
-
-    private
-
-    def underscore(string)
-      string
-        .to_s
-        .gsub(/\s+/, '_')
-        .downcase
-        .to_sym
     end
   end
 end

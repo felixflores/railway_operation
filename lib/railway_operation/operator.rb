@@ -58,21 +58,16 @@ module RailwayOperation
       def operation(operation_or_name)
         @operations ||= {}
 
-        an_op = Operation.new(operation_or_name)
-        the_op = @operations[an_op.name] ||= an_op
+        name = Operation.format_name(operation_or_name)
+        operation = @operations[name] ||= Operation.new(operation_or_name)
 
         # See operation/nested_operation_spec.rb for details for block syntax
-        block_given? ? yield(the_op) : the_op
+        block_given? ? yield(operation) : operation
       end
 
       alias get_operation operation
       def add_step(*args, operation: nil, **options, &block)
-        if operation.is_a?(Operation)
-          operation.add_step(*args, **options, &block)
-        else
-          get_operation(operation || :default)
-            .add_step(*args, **options, &block)
-        end
+        get_operation(operation || :default).add_step(*args, **options, &block)
       end
 
       def run(argument, operation: :default, **opts)
@@ -96,11 +91,10 @@ module RailwayOperation
 
       def run(argument, operation: :default, track_identifier: 0, step_index: 0)
         op = operation_with_defaults!(self.class.operation(operation))
-        result = nil
-        result_info = {}
+        result, result_info = nil
 
-        wrap(with: op.operation_surrounds) do
-          result, result_info = run_steps(
+        result, result_info = wrap(with: op.operation_surrounds) do
+          run_steps(
             argument,
             {},
             operation: op,
@@ -143,22 +137,21 @@ module RailwayOperation
 
         begin
           if step_definition
-            new_argument = argument.clone
-
             step_surrounds = operation.step_surrounds[track_identifier]
             step_surrounds += operation.step_surrounds['*']
 
-            wrap(
-              with: step_surrounds, pass_through: [new_argument, info]
-            ) do |wrapped_args, wrapped_info|
-              new_argument, info = run_step(
-                step_definition, wrapped_args, wrapped_info
-              )
+            options = {
+              with: step_surrounds,
+              pass_through: [argument.clone, info]
+            }
+
+            new_argument, new_info = wrap(options) do |arg, inf|
+              run_step(step_definition, arg, inf)
             end
 
             run_steps(
               new_argument,
-              info,
+              new_info,
               operation: operation,
               track_identifier: step_definition[:success] || track_identifier,
               step_index: step_index + 1
@@ -179,7 +172,7 @@ module RailwayOperation
           # This is the version of the argument after it was potentially
           # modified by run_steps. Halting preseverse modifications performed
           # to the argument up to the point it was halted.
-          [new_argument, info]
+          [new_argument || argument, info]
         rescue FailOperation
           # this the value of the argument prior to it being passed to run_steps
           [@original_argument, info]
