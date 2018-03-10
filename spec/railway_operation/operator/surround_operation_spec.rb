@@ -57,19 +57,19 @@ class SurroundTest
     self.class.log(2) << 'Surround 2 After'
   end
 
-  def step1(argument, **info)
+  def step1(argument, **_info)
     argument[:step1] = true
-    [argument, info]
+    argument
   end
 
-  def step2(argument, **info)
+  def step2(argument, **_info)
     argument[:step2] = true
-    [argument, info]
+    argument
   end
 
-  def step3(argument, **info)
+  def step3(argument, **_info)
     argument[:step3] = true
-    [argument, info]
+    argument
   end
 end
 

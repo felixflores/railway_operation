@@ -10,17 +10,17 @@ module RailwayOperation
 
     def execute(surrounds)
       surround, *rest = surrounds
-      argument, info = nil
+      result = nil
 
       send_surround(surround, @pass_through) do
-        argument, info = if rest.empty?
-                           @body.call(*@pass_through)
-                         else
-                           execute(rest)
-                         end
+        result = if rest.empty?
+                   @body.call(*@pass_through)
+                 else
+                   execute(rest)
+                 end
       end
 
-      [argument, info]
+      result
     end
 
     def send_surround(surround_definition, args)

@@ -3,9 +3,9 @@
 require 'spec_helper'
 
 class AClass
-  def self.call(argument, **info)
+  def self.call(argument, **_info)
     argument[:in_class_call] = true
-    [argument, info]
+    argument
   end
 end
 
@@ -16,20 +16,20 @@ class POROClass
   add_step 0, AClass
   add_step(
     0,
-    lambda do |argument, **info|
+    lambda do |argument, **_info|
       argument[:in_lambda] = true
-      [argument, info]
+      argument
     end
   )
 
-  add_step(0) do |argument, **info|
+  add_step(0) do |argument, **_info|
     argument[:in_block] = true
-    [argument, info]
+    argument
   end
 
-  def step1(argument, **info)
+  def step1(argument, **_info)
     argument[:in_normal_step] = true
-    [argument, info]
+    argument
   end
 end
 

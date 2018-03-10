@@ -26,7 +26,7 @@ class FailOperationMidStep < InfiniteSteps
   add_step 0, :step2
   add_step 0, :step3
 
-  def step2(argument, **)
+  def step2(argument, **info)
     argument['value'] << 2.1
     fail_operation!
     argument['value'] << 2.2
