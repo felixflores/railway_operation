@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'deep_clone'
+
 module RailwayOperation
   # When RailwayOperation::Operator is include into any Ruby object
   # it extends that ruby class with the necessary methods to allow
@@ -7,8 +9,16 @@ module RailwayOperation
   # See https://vimeo.com/97344498 for a high level overview
   module Operator
     class FailStep < StandardError; end
-    class HaltOperation < StandardError; end
     class FailOperation < StandardError; end
+    class HaltOperation < StandardError
+      attr_reader :argument, :info
+
+      def initialize(argument:, info:)
+        @argument = argument
+        @info = info
+        super
+      end
+    end
 
     def self.included(base)
       base.extend ClassMethods
@@ -27,7 +37,7 @@ module RailwayOperation
       end
 
       def method_missing(method, *args, &block)
-        return super unless respond_to_missing?(method)
+        return super unless method.match?(CAPTURE_OPERATION_NAME)
 
         operation = method.match(CAPTURE_OPERATION_NAME)[:operation]
         run(args[0], operation: operation, **(args[1] || {}))
@@ -96,7 +106,7 @@ module RailwayOperation
         result, result_info = wrap(with: op.operation_surrounds) do
           run_steps(
             argument,
-            {},
+            { operation: op },
             operation: op,
             track_identifier: track_identifier,
             step_index: step_index
@@ -112,26 +122,28 @@ module RailwayOperation
         default_operation = self.class.default_operation
         return operation if operation == default_operation
 
-        op = operation.clone
+        operation.fails_step ||= default_operation.fails_step
+        operation.operation_surrounds ||= default_operation.operation_surrounds
+        operation.step_surrounds ||= default_operation.step_surrounds
+        operation.track_alias ||= operation.track_alias
 
-        op.fails_step ||= default_operation.fails_step
-        op.operation_surrounds ||= default_operation.operation_surrounds
-        op.step_surrounds ||= default_operation.step_surrounds
-        op.track_alias ||= op.track_alias
-
-        op
+        operation
       end
 
       def run_steps(argument, info, track_identifier:, step_index:, operation:)
-        info[:arguments] ||= []
-        info[:arguments] << argument
+        info[:execution] ||= []
+        info[:execution] << {
+          track_identifier: track_identifier,
+          step_index: step_index,
+          argument: argument
+        }
 
         return [argument, info] if step_index > operation.last_step_index
 
         # We memoize the version of the argument which was passed
         # to run_steps at the first iteration of the recursion
         # this allows us to return it in case the the operation fails
-        @original_argument ||= argument.clone # see rescue FailOperation
+        @original_argument ||= argument # see rescue FailOperation
 
         step_definition = operation[track_identifier, step_index]
 
@@ -142,7 +154,7 @@ module RailwayOperation
 
             options = {
               with: step_surrounds,
-              pass_through: [argument.clone, info]
+              pass_through: [DeepClone.clone(argument), info]
             }
 
             new_argument, new_info = wrap(options) do |arg, inf|
@@ -168,11 +180,8 @@ module RailwayOperation
               step_index: step_index + 1
             )
           end
-        rescue HaltOperation
-          # This is the version of the argument after it was potentially
-          # modified by run_steps. Halting preseverse modifications performed
-          # to the argument up to the point it was halted.
-          [new_argument || argument, info]
+        rescue HaltOperation => e
+          [e.argument, e.info]
         rescue FailOperation
           # this the value of the argument prior to it being passed to run_steps
           [@original_argument, info]
@@ -209,8 +218,9 @@ module RailwayOperation
         raise FailOperation
       end
 
-      def halt_operation!
-        raise HaltOperation
+      def halt_operation!(argument, info)
+        info[:execution].last[:halted] = true
+        raise HaltOperation.new(argument: argument, info: info)
       end
     end
   end

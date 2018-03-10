@@ -38,13 +38,15 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
 
   spec.add_runtime_dependency 'ruby-graphviz'
+  spec.add_runtime_dependency 'ruby_deep_clone'
 
   spec.add_development_dependency 'bundler', '~> 1.14'
   spec.add_development_dependency 'pry-byebug'
   spec.add_development_dependency 'pry-doc'
+  spec.add_development_dependency 'pry-rescue'
+  spec.add_development_dependency 'pry-clipboard'
   spec.add_development_dependency 'pry-stack_explorer'
   spec.add_development_dependency 'rake', '~> 10.0'
   spec.add_development_dependency 'rspec', '~> 3.0'
   spec.add_development_dependency 'simplecov'
-
 end
