@@ -1,82 +1,101 @@
 # frozen_string_literal: true
 
 module RailwayOperation
+  # This is the value object that holds the information necessary to
+  # run an operation
   class Operation
-    attr_reader :name, :mapping, :tracks
-    attr_accessor :surrounds, :step_surrounds, :track_alias
+    extend Forwardable
+
+    attr_reader :name
+    attr_accessor :fails_step,
+                  :step_exceptions,
+                  :operation_surrounds,
+                  :step_surrounds,
+                  :track_alias,
+                  :tracks
+
+    def self.new(operation_or_name)
+      return operation_or_name if operation_or_name.is_a?(Operation)
+      super
+    end
+
+    def self.format_name(op_or_name)
+      if op_or_name.respond_to?(:name)
+        op_or_name.name
+      else
+        op_or_name.to_s.gsub(/\s+/, '_').downcase.to_sym
+      end
+    end
 
     def initialize(name)
-      @surrounds = []
-      @step_surrounds = []
-      @tracks = []
+      @name = self.class.format_name(name)
+
+      @fails_step = TypedArray.new(
+        ensure_type_is: Exception,
+        error_message: 'Step failures must be an kind of Exception'
+      )
+
+      @operation_surrounds = []
+      @step_surrounds = EnsuredAccess.new({}) { StepsArray.new }
+
       @track_alias = {}
-      @fails_step = []
-      @name = name
+      @tracks = FilledMatrix.new(row_type: StepsArray)
+    end
+
+    def [](track_identifier, step_index = nil)
+      tracks[
+        track_index(track_identifier),
+        step_index
+      ]
+    end
+
+    def []=(track_identifier, step_index, step)
+      tracks[
+        track_index(track_identifier),
+        step_index
+      ] = step
     end
 
     def add_step(
-      track,
-      method = nil,
-      failure: nil,
+      track_indentifier,
+      method,
       success: nil,
+      failure: nil,
       &block
     )
-      inject_step(
-        track,
-        method: method || block,
-        success: track_index(success),
-        failure: track_index(failure)
-      )
-    end
-
-    def fails_step(*exceptions)
-      @fails_step += exceptions
-    end
-
-    def surround_steps(on_track:, with:)
-      @step_surrounds[track_index(on_track)] ||= []
-      @step_surrounds[track_index(on_track)] << with
-    end
-
-    def nest(operation)
-      operation.tracks.each_with_index do |t, track_index|
-        t.each do |step_definition|
-          inject_step(track_index, step_definition)
-        end
-      end
+      self[track_indentifier, last_step_index + 1] = {
+        method: block || method,
+        success: success,
+        failure: failure
+      }
     end
 
     def alias_tracks(mapping = {})
       @track_alias.merge!(mapping)
     end
 
-    def track_index(identifier)
-      if identifier.is_a?(Numeric)
-        identifier
-      else
-        @track_alias[identifier]
+    def nest(operation)
+      operation.tracks.each_with_index do |track, track_index|
+        track.each do |s|
+          tracks[track_index, last_step_index + 1] = s
+        end
       end
     end
 
-    def fetch_track(identifier)
-      index = identifier.is_a?(Numeric) ? identifier : alias_tracks[identifier]
-      tracks[index] ||= []
-      tracks[index]
-    end
-
-
-    def next_step_index
-      (tracks.compact.max_by(&:length) || []).length
-    end
-
     def last_step_index
-      next_step_index - 1
+      tracks.max_column_index
     end
 
-    private
+    def successor_track(track_identifier)
+      track_index(track_identifier) + 1
+    end
 
-    def inject_step(track, **step)
-      fetch_track(track)[next_step_index] = step
+    def track_index(track_identifier)
+      if track_identifier.is_a?(Numeric)
+        track_identifier
+      else
+        @track_alias[track_identifier]
+      end
     end
   end
 end

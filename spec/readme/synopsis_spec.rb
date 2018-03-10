@@ -14,16 +14,19 @@ module Readme
       @someone = someone
     end
 
-    def first_method(argument, **)
+    def first_method(argument, **info)
       argument << "Hello #{@someone}, from first_method."
+      [argument, info]
     end
 
-    def another_method(argument, **)
+    def another_method(argument, **info)
       argument << 'Hello from another_method.'
+      [argument, info]
     end
 
-    def final_method(argument, **)
+    def final_method(argument, **info)
       argument << 'Hello from final_method.'
+      [argument, info]
     end
   end
 end
@@ -31,7 +34,7 @@ end
 describe Readme::Synopsis do
   let(:argument) { [] }
   it 'executes methods in the order they are specified' do
-    result = described_class.run(argument)
+    result, _info = described_class.run(argument)
 
     expect(result).to eq(
       [
@@ -43,7 +46,7 @@ describe Readme::Synopsis do
   end
 
   it 'executes operation with the initialized parameter' do
-    result = described_class.new('Felix').run(argument)
+    result, _info = described_class.new('Felix').run(argument)
 
     expect(result).to eq(
       [

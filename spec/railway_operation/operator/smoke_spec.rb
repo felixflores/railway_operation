@@ -15,13 +15,13 @@ end
 describe 'smoke test RailwayOperation::Operator' do
   describe '.run' do
     it 'executes the steps in the operation' do
-      result = HappyPath.run({})
+      result, _info = HappyPath.run({})
       expect(result['value']).to eq(%i[step1 step2 step3])
     end
 
     it 'does not mutate arguments passed to the operation' do
       argument = { 'original_value' => "don't change" }
-      result = HappyPath.run(argument)
+      result, _info = HappyPath.run(argument)
 
       expect(argument).to eq('original_value' => "don't change")
       expect(result).to eq(
@@ -31,7 +31,7 @@ describe 'smoke test RailwayOperation::Operator' do
     end
 
     it 'can accept splatted hash' do
-      result = HappyPath.run(original: :value)
+      result, _info = HappyPath.run(original: :value)
       expect(result).to eq(
         original: :value,
         'value' => %i[step1 step2 step3]
@@ -40,7 +40,7 @@ describe 'smoke test RailwayOperation::Operator' do
 
     it 'does nothing when no steps are specified' do
       argument = 'noop'
-      result = NoSteps.run(argument)
+      result, _info = NoSteps.run(argument)
 
       expect(result).to eq(argument)
     end

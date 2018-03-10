@@ -37,7 +37,7 @@ describe 'fail RailwayOperation::Operator' do
   describe '.run' do
     context 'multiple tracks defined' do
       it 'remains on the same track if step does not fail' do
-        result = MultiplePath.run({})
+        result, _info = MultiplePath.run({})
         expect(result).to eq('value' => %i[step1 step3])
       end
 
@@ -46,14 +46,14 @@ describe 'fail RailwayOperation::Operator' do
           { 'value' => %i[step0_0 fail1_3] }
         end
         it 'moves to the track 1 index higher' do
-          result, info = StepFailure.run({})
+          result, _info = StepFailure.run({})
           expect(result).to eq(failure_steps)
         end
 
         it 'rolls back any mutations' do
           original_argument = { original: 'af' }
 
-          result = StepFailure.run(original_argument)
+          result, _info = StepFailure.run(original_argument)
           expect(result).to eq(original_argument.merge(failure_steps))
         end
       end
@@ -62,7 +62,7 @@ describe 'fail RailwayOperation::Operator' do
         let(:argument) { { the: :agument } }
 
         it 'does not maintain any changes to the argument' do
-          result, info = FailOperationMidStep.run(argument)
+          result, _info = FailOperationMidStep.run(argument)
           expect(result).to eq(argument)
         end
       end

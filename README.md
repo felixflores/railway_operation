@@ -4,6 +4,24 @@
 
 This gem allows you to declare and compose a set of operations into a functional execution tree inspired by the railway oriented programming pattern. See ([https://fsharpforfunandprofit.com/rop/](https://fsharpforfunandprofit.com/rop/)) for more details.
 
+## Installation
+
+Add this line to your application's Gemfile:
+
+```ruby
+gem 'railway_operation'
+```
+
+And then execute:
+
+    $ bundle
+
+Or install it yourself as:
+
+    $ gem install railway_operation
+    
+Then in any of your ruby class `include RailwayOperation::Operator`.
+
 ## Basic Usage
 Let's say we have the following class
 
@@ -71,9 +89,9 @@ module Readme
   end
 end
 
-result = Readme::Synopsis.new('Felix').run(argument)
+result, info = Readme::Synopsis.new('Felix').run(argument)
 
-result, info == [
+result == [
   'Hello Felix, from first_method.'
   'Hello from another_method.'
   'Hello from final_method.'
@@ -113,24 +131,32 @@ module Readme
 end
 ```
 
-
-## Installation
-
-Add this line to your application's Gemfile:
+If we changed `first_method` to
 
 ```ruby
-gem 'railway_operation'
+def first_method(argument, **)
+  argument << 'Hello from first_method.'
+  raise MyError
+end
 ```
 
-And then execute:
+And `ReadMe::FailingStep.run([])`, then `result` will be ['Error MyError']
 
-    $ bundle
+Alternatively if we changed 
 
-Or install it yourself as:
+```ruby
+def another_method(argument, **)
+  argument << 'Hello from another_method.'
+  raise MyError
+end
+```
 
-    $ gem install railway_operation
-    
-Then in any of your ruby class `include RailwayOperation::Operator`.
+`result` will be `['Hello somebody, from first_method.', 'Error MyError']`
+
+In order to explain how this works, it's important to cover several key concepts. To declare a step at its simplest for, `add_step(<track_id>, <method>)` is used. In order to explain what those parameters means, it's important to define a few terms and concepts. 
+
+
+
 
 ## Development
 

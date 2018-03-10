@@ -41,24 +41,24 @@ end
 describe 'explicit tracks RailwayOperation::Operator' do
   context 'explicit success track' do
     it 'switches to the specified track if the step succeeds' do
-      result = ExplicitSuccessTrack.run({})
+      result, _info = ExplicitSuccessTrack.run({})
       expect(result['value']).to eq(%i[step1 step2 step3])
     end
 
     it 'switches to the specified distant track if the step succeeds' do
-      result = DistantExplicitSuccessTrack.run({})
+      result, _info = DistantExplicitSuccessTrack.run({})
       expect(result['value']).to eq(%i[step1 step2])
     end
   end
 
   context 'explicit fail track' do
     it 'switches to the specified track if the step fail' do
-      result = ExplicitFailTrack.run({})
+      result, _info = ExplicitFailTrack.run({})
       expect(result['value']).to eq(%i[step1 step4])
     end
 
     it 'switches to the specified distant track if the step fails' do
-      result = DistantExplicitFailTrack.run({})
+      result, _info = DistantExplicitFailTrack.run({})
       expect(result['value']).to eq(%i[step1])
     end
   end
