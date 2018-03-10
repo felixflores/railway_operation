@@ -62,7 +62,8 @@ module RailwayOperation
                      :nest,
                      :operation_surrounds,
                      :step_surrounds,
-                     :fails_step
+                     :fails_step,
+                     :fails_operation
 
       def operation(operation_or_name)
         @operations ||= {}
@@ -194,6 +195,8 @@ module RailwayOperation
         wrap(with: surrounds, pass_through: pass_through) do |*args|
           if step_definition[:method].is_a?(Symbol)
             public_send(step_definition[:method], *args)
+          elsif step_definition[:method].is_a?(Array)
+            step_definition[:method][0].send(step_definition[:method][1], *args)
           else
             step_definition[:method].call(*args)
           end

@@ -7,6 +7,11 @@ class AClass
     argument[:in_class_call] = true
     argument
   end
+
+  def self.other(argument, **_info)
+    argument[:in_class_other] = true
+    argument
+  end
 end
 
 class POROClass
@@ -14,6 +19,7 @@ class POROClass
 
   add_step 0, :step1
   add_step 0, AClass
+  add_step 0, [AClass, :other]
   add_step(
     0,
     lambda do |argument, **_info|
@@ -40,6 +46,7 @@ describe 'lambda step RailwayOperation::Operator' do
     new_argument = argument.merge(
       in_lambda: true,
       in_class_call: true,
+      in_class_other: true,
       in_normal_step: true,
       in_block: true
     )
