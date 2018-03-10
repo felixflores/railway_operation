@@ -14,6 +14,11 @@ module RailwayOperation
                   :track_alias,
                   :tracks
 
+    def new(operation_or_name)
+      return operation_or_name if operation_or_name.is_a?(Operation)
+      super
+    end
+
     def initialize(name)
       @name = underscore(name)
 
@@ -22,7 +27,7 @@ module RailwayOperation
         error_message: 'Step failures must be an kind of Exception'
       )
 
-      @operation_surrounds = Array.new
+      @operation_surrounds = []
       @step_surrounds = EnsuredAccess.new({}) { StepsArray.new }
 
       @track_alias = {}

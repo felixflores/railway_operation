@@ -6,8 +6,8 @@ module RailwayOperation
 
     def initialize(*rows, row_type: Array)
       @row_type = row_type
-      @matrix = EnsuredAccess.new(row_type.new(rows)) do
-        EnsuredAccess.new(row_type.new)
+      @matrix = EnsuredAccess.new(@row_type.new(rows)) do
+        EnsuredAccess.new(@row_type.new)
       end
 
       ensure_rows_length_are_equal!

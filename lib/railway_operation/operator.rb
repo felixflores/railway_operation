@@ -55,14 +55,11 @@ module RailwayOperation
                      :step_surrounds,
                      :fails_step
 
-      def operation(op)
+      def operation(operation_or_name)
         @operations ||= {}
 
-        the_op = if op.is_a?(Operation)
-                   op
-                 else
-                   @operations[op.to_sym] ||= Operation.new(op)
-                 end
+        an_op = Operation.new(operation_or_name)
+        the_op = @operations[an_op.name] ||= an_op
 
         # See operation/nested_operation_spec.rb for details for block syntax
         block_given? ? yield(the_op) : the_op
