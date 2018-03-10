@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 module RailwayOperation
-  # This is the value object that holds the information necessary to run an operation
+  # This is the value object that holds the information necessary to
+  # run an operation
   class Operation
     extend Forwardable
 
@@ -21,18 +22,14 @@ module RailwayOperation
         error_message: 'Step failures must be an kind of Exception'
       )
 
-      @operation_surrounds = TypedArray.new(
-        ensure_type_is: [Symbol, Proc, String, Array],
-        error_message: 'Invalid operation surround declaration, must' \
-          'be of type Symbol, Proc, Lambda, or String'
-      )
+      @operation_surrounds = Array.new
+      @step_surrounds = EnsuredAccess.new({}) { StepsArray.new }
 
-      @step_surrounds = EnsuredAccess.new({}) { [] }
       @track_alias = {}
-      @tracks = FilledMatrix.new
+      @tracks = FilledMatrix.new(row_type: StepsArray)
     end
 
-    def [](track_identifier, step_index)
+    def [](track_identifier, step_index = nil)
       tracks[
         track_index(track_identifier),
         step_index

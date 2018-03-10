@@ -24,6 +24,8 @@ describe RailwayOperation::Operation do
     let(:operation3) { described_class.new(:operation_name) }
     let(:operation4) { described_class.new('Operation name') }
 
+    context '#step_surrounds'
+
     it 'returns the name in underscore format' do
       expect(subject.name).to eq(:operation_sample)
       expect(operation1.name).to eq(:operation_name)
@@ -34,7 +36,65 @@ describe RailwayOperation::Operation do
   end
 
   context '#operation_surrounds' do
-    it 'allows symbols to be pushed'
+    it 'is a SurroundsArray' do
+      expect(subject.operation_surrounds).to be_a(Array)
+    end
+  end
+
+  context '#step_surrounds' do
+    it 'is an EnsuredAccess hash' do
+      expect(subject.step_surrounds).to be_a(RailwayOperation::EnsuredAccess)
+      expect(subject.step_surrounds.__getobj__).to be_a(Hash)
+    end
+
+    it 'has a default value of an empty SurroundsArray' do
+      expect(subject.step_surrounds['random']).to be_a(RailwayOperation::StepsArray)
+      expect(subject.step_surrounds['random']).to be_empty
+    end
+  end
+
+  context '#track_alias' do
+    it 'is a hash' do
+      expect(subject.track_alias).to be_a(Hash)
+    end
+  end
+
+  context '#tracks' do
+    it 'is a FilledMatrix' do
+      expect(subject.tracks).to be_a(RailwayOperation::FilledMatrix)
+    end
+
+    it 'is StepsArray ensured access array for each track' do
+      expect(subject.tracks[0]).to be_a(RailwayOperation::EnsuredAccess)
+      expect(subject.tracks[0].__getobj__).to be_a(RailwayOperation::StepsArray)
+    end
+  end
+
+  context '#[]' do
+    context 'with alias' do
+      before do
+        subject.track_alias = { 'first' => 0, 'second' => 1, 'third' => 2 }
+
+        subject.add_step(0, :method0)
+        subject.add_step('first', :method1)
+        subject.add_step(1, :method2)
+        subject.add_step('second', :method3)
+      end
+
+      it 'resolves the steps according to the alias mapping' do
+        expect(subject['first', 0][:method]).to eq(:method0)
+        expect(subject['first', 1][:method]).to eq(:method1)
+        expect(subject['second', 2][:method]).to eq(:method2)
+        expect(subject['second', 3][:method]).to eq(:method3)
+      end
+    end
+  end
+
+  context '#[]=' do
+    it 'can be used to assign steps to the step matrix' do
+      subject[0, 2] = :method
+      expect(subject.tracks[0, 2]).to eq(:method)
+    end
   end
 
   context '#add_step' do

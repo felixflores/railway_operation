@@ -6,10 +6,14 @@ module RailwayOperation
     class UnacceptableMember < StandardError; end
     DEFAULT_MESSAGE = 'invalid element type, unable to add element'
 
-    def initialize(ensure_type_is:, error_message: DEFAULT_MESSAGE)
+    def initialize(array = nil, ensure_type_is:, error_message: DEFAULT_MESSAGE)
+      if array&.any? { |a| !element_acceptable?(a) }
+        raise UnacceptableMember, @error_message
+      end
+
       @types = wrap(ensure_type_is)
       @error_message = error_message
-      @arr = []
+      @arr = array || []
     end
 
     def __setobj__(arr)
@@ -21,23 +25,27 @@ module RailwayOperation
     end
 
     def <<(element)
-      if !check_class_type(element) && !check_instance_type(element)
+      unless element_acceptable?(element)
         raise UnacceptableMember, @error_message
       end
 
       @arr << element
     end
 
-    def check_class_type(element)
+    def element_acceptable?(element)
+      class_acceptable?(element) || instance_acceptable?(element)
+    end
+
+    private
+
+    def class_acceptable?(element)
       return false unless element.is_a?(Class)
       @types.detect { |type| element <= type }
     end
 
-    def check_instance_type(element)
+    def instance_acceptable?(element)
       @types.detect { |type| element.is_a?(type) }
     end
-
-    private
 
     # Taken from ActiveSupport Array.wrap https://apidock.com/rails/Array/wrap/class
     def wrap(object)
