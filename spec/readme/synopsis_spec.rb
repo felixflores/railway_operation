@@ -14,19 +14,19 @@ module Readme
       @someone = someone
     end
 
-    def first_method(argument, **info)
+    def first_method(argument, **_info)
       argument << "Hello #{@someone}, from first_method."
-      [argument, info]
+      argument
     end
 
-    def another_method(argument, **info)
+    def another_method(argument, **_info)
       argument << 'Hello from another_method.'
-      [argument, info]
+      argument
     end
 
-    def final_method(argument, **info)
+    def final_method(argument, **_info)
       argument << 'Hello from final_method.'
-      [argument, info]
+      argument
     end
   end
 end

@@ -13,6 +13,6 @@ end
 describe 'alias step RailwayOperation::Operator' do
   it 'resolve tracks using alias' do
     result, _info = AliasedTracks.run({})
-    expect(result['value']).to eq(%i[step1 step2 step3])
+    expect(result['value']).to eq([:step1, :step2, :step3])
   end
 end

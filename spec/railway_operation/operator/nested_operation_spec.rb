@@ -22,18 +22,18 @@ end
 describe 'nested operation RailwayOperation::Operator' do
   it 'allows variations to exist' do
     result, _info = NestedExample.run_variation1({})
-    expect(result['value']).to eq(%i[method2 method3 method4])
+    expect(result['value']).to eq([:method2, :method3, :method4])
   end
 
   it 'allows operations to be nested' do
     result, _info = NestedExample.run_variation2({})
-    expect(result['value']).to eq(%i[method1 method2 method3 method4 method5])
+    expect(result['value']).to eq([:method1, :method2, :method3, :method4, :method5])
   end
 
   it 'allows named operations to be nested to the default operation' do
     result, _info = NestedExample.run({})
     expect(result['value']).to eq(
-      %i[method1 method2 method3 method4 method5 method6]
+      [:method1, :method2, :method3, :method4, :method5, :method6]
     )
   end
 end

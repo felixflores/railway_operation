@@ -8,6 +8,7 @@ module RailwayOperation
 
     attr_reader :name
     attr_accessor :fails_step,
+                  :fails_operation,
                   :step_exceptions,
                   :operation_surrounds,
                   :step_surrounds,
@@ -30,11 +31,8 @@ module RailwayOperation
     def initialize(name)
       @name = self.class.format_name(name)
 
-      @fails_step = TypedArray.new(
-        ensure_type_is: Exception,
-        error_message: 'Step failures must be an kind of Exception'
-      )
-
+      @fails_step = ExceptionsArray.new
+      @fails_operation = ExceptionsArray.new
       @operation_surrounds = []
       @step_surrounds = EnsuredAccess.new({}) { StepsArray.new }
 

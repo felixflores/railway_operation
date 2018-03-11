@@ -18,14 +18,14 @@ module Readme
       @someone = someone
     end
 
-    def first_method(argument, **info)
+    def first_method(argument, **_info)
       argument << "Hello #{@someone}, from first_method."
-      [argument, info]
+      argument
     end
 
-    def another_method(argument, **info)
+    def another_method(argument, **_info)
       argument << 'Hello from another_method.'
-      [argument, info]
+      argument
     end
 
     def final_method(argument, **)
@@ -33,9 +33,10 @@ module Readme
       raise MyError
     end
 
-    def log_error(argument, error:, **info)
+    def log_error(argument, execution:, **_info)
+      error = execution.detect { |s| s[:failed] }[:error]
       argument << "Error #{error.class}"
-      [argument, info]
+      argument
     end
   end
 end
@@ -54,4 +55,3 @@ describe Readme::FailingStep do
     )
   end
 end
-

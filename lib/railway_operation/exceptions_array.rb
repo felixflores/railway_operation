@@ -2,15 +2,12 @@
 
 module RailwayOperation
   # Ensures that the array containing surrounds are of valid type
-  class StepsArray < TypedArray
+  class ExceptionsArray < TypedArray
     def initialize(*args, **options)
-      types = [Symbol, Proc, String, Array]
-
       super(
         *args,
-        ensure_type_is: types,
-        error_message: 'Invalid operation surround declaration, must' \
-          "be of type #{types}",
+        ensure_type_is: Exception,
+        error_message: 'Operation failure classes must be a kind of Exception',
         **options
       )
     end

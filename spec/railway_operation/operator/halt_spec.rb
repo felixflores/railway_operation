@@ -9,7 +9,7 @@ class HaltOperationMidStep < InfiniteSteps
 
   def step2(argument, **info)
     argument['value'] << 2.1
-    halt_operation!
+    halt_operation!(argument)
     argument['value'] << 2.2
 
     [argument, info]

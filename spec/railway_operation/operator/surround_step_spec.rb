@@ -16,22 +16,22 @@ class SurroundSteps < InfiniteSteps
   add_step 0, :method6, success: 2
   add_step 2, :method7
 
-  def surround0(_argument, arguments:, **, &block)
-    log_surround(0, arguments, &block)
+  def surround0(_argument, execution:, **, &block)
+    log_surround(0, execution, &block)
   end
 
-  def surround1(_argument, arguments:, **, &block)
-    log_surround(1, arguments, &block)
+  def surround1(_argument, execution:, **, &block)
+    log_surround(1, execution, &block)
   end
 
-  def surround2(_argument, arguments:, **, &block)
-    log_surround(2, arguments, &block)
+  def surround2(_argument, execution:, **, &block)
+    log_surround(2, execution, &block)
   end
 
   private
 
-  def log_surround(index, arguments)
-    step = arguments.length - 1
+  def log_surround(index, execution)
+    step = execution.length - 1
 
     self.class.log(index) << "step #{step} before"
     yield

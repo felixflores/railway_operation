@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'deep_clone'
+
 module RailwayOperation
   # When RailwayOperation::Operator is include into any Ruby object
   # it extends that ruby class with the necessary methods to allow
@@ -7,8 +9,15 @@ module RailwayOperation
   # See https://vimeo.com/97344498 for a high level overview
   module Operator
     class FailStep < StandardError; end
-    class HaltOperation < StandardError; end
     class FailOperation < StandardError; end
+
+    class HaltOperation < StandardError
+      attr_reader :argument
+
+      def initialize(argument)
+        @argument = argument
+      end
+    end
 
     def self.included(base)
       base.extend ClassMethods
@@ -27,7 +36,7 @@ module RailwayOperation
       end
 
       def method_missing(method, *args, &block)
-        return super unless respond_to_missing?(method)
+        return super unless method.match?(CAPTURE_OPERATION_NAME)
 
         operation = method.match(CAPTURE_OPERATION_NAME)[:operation]
         run(args[0], operation: operation, **(args[1] || {}))
@@ -53,7 +62,8 @@ module RailwayOperation
                      :nest,
                      :operation_surrounds,
                      :step_surrounds,
-                     :fails_step
+                     :fails_step,
+                     :fails_operation
 
       def operation(operation_or_name)
         @operations ||= {}
@@ -91,19 +101,33 @@ module RailwayOperation
 
       def run(argument, operation: :default, track_identifier: 0, step_index: 0)
         op = operation_with_defaults!(self.class.operation(operation))
-        result, result_info = nil
 
-        result, result_info = wrap(with: op.operation_surrounds) do
+        wrap(with: op.operation_surrounds) do
           run_steps(
             argument,
-            {},
+            Logger.new({ operation: op }),
             operation: op,
             track_identifier: track_identifier,
             step_index: step_index
           )
         end
+      end
 
-        [result, result_info]
+      def run_step(step_definition = nil, argument:, info:, surrounds: [])
+        return argument unless step_definition
+
+        pass_through = [DeepClone.clone(argument), info]
+
+        info.execution.last[:noop] = false
+        wrap(with: surrounds, pass_through: pass_through) do |*args|
+          if step_definition[:method].is_a?(Symbol)
+            public_send(step_definition[:method], *args)
+          elsif step_definition[:method].is_a?(Array)
+            step_definition[:method][0].send(step_definition[:method][1], *args)
+          else
+            step_definition[:method].call(*args)
+          end
+        end
       end
 
       private
@@ -112,92 +136,70 @@ module RailwayOperation
         default_operation = self.class.default_operation
         return operation if operation == default_operation
 
-        op = operation.clone
+        operation.fails_step ||= default_operation.fails_step
+        operation.operation_surrounds ||= default_operation.operation_surrounds
+        operation.step_surrounds ||= default_operation.step_surrounds
+        operation.track_alias ||= operation.track_alias
 
-        op.fails_step ||= default_operation.fails_step
-        op.operation_surrounds ||= default_operation.operation_surrounds
-        op.step_surrounds ||= default_operation.step_surrounds
-        op.track_alias ||= op.track_alias
-
-        op
+        operation
       end
 
       def run_steps(argument, info, track_identifier:, step_index:, operation:)
-        info[:arguments] ||= []
-        info[:arguments] << argument
+        info.execution << {
+          track_identifier: track_identifier,
+          step_index: step_index,
+          argument: argument,
+          noop: true
+        }
 
         return [argument, info] if step_index > operation.last_step_index
 
         # We memoize the version of the argument which was passed
         # to run_steps at the first iteration of the recursion
         # this allows us to return it in case the the operation fails
-        @original_argument ||= argument.clone # see rescue FailOperation
+        @original_argument ||= argument
 
         step_definition = operation[track_identifier, step_index]
 
         begin
-          if step_definition
-            step_surrounds = operation.step_surrounds[track_identifier]
-            step_surrounds += operation.step_surrounds['*']
+          new_argument = run_step(
+            step_definition,
+            surrounds: operation.step_surrounds[track_identifier] + operation.step_surrounds['*'],
+            argument: argument,
+            info: info
+          )
 
-            options = {
-              with: step_surrounds,
-              pass_through: [argument.clone, info]
-            }
+          run_steps(
+            new_argument || argument,
+            info,
+            operation: operation,
+            track_identifier: step_definition && step_definition[:success] || track_identifier,
+            step_index: step_index + 1
+          )
+        rescue HaltOperation => e
+          info[:execution].last[:error] = e
+          info[:execution].last[:halted] = true
+          [e.argument, info]
+        rescue => e
+          info[:execution].last[:error] = e
+          info[:execution].last[:failed] = true
 
-            new_argument, new_info = wrap(options) do |arg, inf|
-              run_step(step_definition, arg, inf)
-            end
+          if (operation.fails_step + [FailStep]).include?(e.class)
 
-            run_steps(
-              new_argument,
-              new_info,
-              operation: operation,
-              track_identifier: step_definition[:success] || track_identifier,
-              step_index: step_index + 1
-            )
-          else
-            # If there are no step definitions found for a given step
-            # of a track, proceed to the next step without any modification
-            # to the argument.
             run_steps(
               argument,
               info,
               operation: operation,
-              track_identifier: track_identifier,
+              track_identifier: step_definition[:failure] || operation.successor_track(track_identifier),
               step_index: step_index + 1
             )
+          elsif (operation.fails_operation + [FailOperation]).include?(e.class)
+            info[:execution].last[:failed_operation] = true
+
+            [@original_argument, info]
+          else
+            raise e
           end
-        rescue HaltOperation
-          # This is the version of the argument after it was potentially
-          # modified by run_steps. Halting preseverse modifications performed
-          # to the argument up to the point it was halted.
-          [new_argument || argument, info]
-        rescue FailOperation
-          # this the value of the argument prior to it being passed to run_steps
-          [@original_argument, info]
-        rescue => e
-          raise e unless (operation.fails_step + [FailStep]).include?(e.class)
-
-          # When a step is failed we rollback any changes performed at that step
-          # and continue execution to of the proceeding steps.
-          info[:error] = e
-
-          run_steps(
-            argument,
-            info,
-            operation: operation,
-            track_identifier: step_definition[:failure] || operation.successor_track(track_identifier),
-            step_index: step_index + 1
-          )
-        end
-      end
-
-      def run_step(step_definition, argument, info)
-        if step_definition[:method].is_a?(Symbol)
-          public_send(step_definition[:method], argument, info)
-        else
-          step_definition[:method].call(argument, info)
         end
       end
 
@@ -209,8 +211,8 @@ module RailwayOperation
         raise FailOperation
       end
 
-      def halt_operation!
-        raise HaltOperation
+      def halt_operation!(argument)
+        raise HaltOperation.new(argument)
       end
     end
   end
