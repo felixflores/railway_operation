@@ -15,8 +15,17 @@ end
 describe 'smoke test RailwayOperation::Operator' do
   describe '.run' do
     it 'executes the steps in the operation' do
-      result, _info = HappyPath.run({})
-      expect(result['value']).to eq(%i[step1 step2 step3])
+      result, info = HappyPath.run({})
+
+      expect(result['value']).to eq([:step1, :step2, :step3])
+      expect(info.execution).to eq(
+        [
+          { track_identifier: 0, step_index: 0, argument: {} },
+          { track_identifier: 0, step_index: 1, argument: { 'value' => [:step1] } },
+          { track_identifier: 0, step_index: 2, argument: { 'value' => [:step1, :step2] } },
+          { track_identifier: 0, step_index: 3, argument: { 'value' => [:step1, :step2, :step3] } }
+        ]
+      )
     end
 
     it 'does not mutate arguments passed to the operation' do
@@ -26,7 +35,7 @@ describe 'smoke test RailwayOperation::Operator' do
       expect(argument).to eq('original_value' => "don't change")
       expect(result).to eq(
         'original_value' => "don't change",
-        'value' => %i[step1 step2 step3]
+        'value' => [:step1, :step2, :step3]
       )
     end
 
@@ -34,7 +43,7 @@ describe 'smoke test RailwayOperation::Operator' do
       result, _info = HappyPath.run(original: :value)
       expect(result).to eq(
         original: :value,
-        'value' => %i[step1 step2 step3]
+        'value' => [:step1, :step2, :step3]
       )
     end
 

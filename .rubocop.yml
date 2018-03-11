@@ -1,0 +1,22 @@
+inherit_from: .rubocop_todo.yml
+
+Gemspec/OrderedDependencies:
+  Exclude:
+    - 'railway_operation.gemspec'
+
+Metrics/LineLength:
+  Enabled: false
+
+Metrics/MethodLength:
+  Enabled: false
+
+Metrics/BlockLength:
+  Enabled: false
+
+Style/FrozenStringLiteralComment:
+  Exclude:
+    - 'Gemfile'
+    - 'bin/console'
+
+Style/SymbolArray:
+  Enabled: false

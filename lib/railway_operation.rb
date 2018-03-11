@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'railway_operation/version'
+require 'railway_operation/logger'
 require 'railway_operation/ensured_access'
 require 'railway_operation/typed_array'
 require 'railway_operation/steps_array'

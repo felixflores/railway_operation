@@ -105,7 +105,7 @@ module RailwayOperation
         wrap(with: op.operation_surrounds) do
           run_steps(
             argument,
-            { operation: op },
+            Logger.new({ operation: op }),
             operation: op,
             track_identifier: track_identifier,
             step_index: step_index
@@ -128,8 +128,7 @@ module RailwayOperation
       end
 
       def run_steps(argument, info, track_identifier:, step_index:, operation:)
-        info[:execution] ||= []
-        info[:execution] << {
+        info.execution << {
           track_identifier: track_identifier,
           step_index: step_index,
           argument: argument
@@ -160,14 +159,14 @@ module RailwayOperation
             step_index: step_index + 1
           )
         rescue HaltOperation => e
+          info[:execution].last[:error] = e
           info[:execution].last[:halted] = true
           [e.argument, info]
         rescue => e
+          info[:execution].last[:error] = e
+          info[:execution].last[:failed] = true
+
           if (operation.fails_step + [FailStep]).include?(e.class)
-            # When a step is failed we rollback any changes performed at that step
-            # and continue execution to of the proceeding steps.
-            info[:execution].last[:error] = e
-            info[:execution].last[:failed] = true
 
             run_steps(
               argument,
@@ -177,7 +176,6 @@ module RailwayOperation
               step_index: step_index + 1
             )
           elsif (operation.fails_operation + [FailOperation]).include?(e.class)
-            info[:execution].last[:failed] = true
             info[:execution].last[:failed_operation] = true
 
             [@original_argument, info]

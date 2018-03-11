@@ -26,7 +26,7 @@ class FailOperationMidStep < InfiniteSteps
   add_step 0, :step2
   add_step 0, :step3
 
-  def step2(argument, **info)
+  def step2(argument, **_info)
     argument['value'] << 2.1
     fail_operation!
     argument['value'] << 2.2
@@ -38,12 +38,12 @@ describe 'fail RailwayOperation::Operator' do
     context 'multiple tracks defined' do
       it 'remains on the same track if step does not fail' do
         result, _info = MultiplePath.run({})
-        expect(result).to eq('value' => %i[step1 step3])
+        expect(result).to eq('value' => [:step1, :step3])
       end
 
       context 'step failure' do
         let(:failure_steps) do
-          { 'value' => %i[step0_0 fail1_3] }
+          { 'value' => [:step0_0, :fail1_3] }
         end
         it 'moves to the track 1 index higher' do
           result, _info = StepFailure.run({})

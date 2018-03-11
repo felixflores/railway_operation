@@ -55,4 +55,3 @@ describe 'lambda step RailwayOperation::Operator' do
     expect(result).to eq(new_argument)
   end
 end
-

@@ -28,7 +28,7 @@ module RailwayOperation
       @matrix[row_index][column_index] = entry
       ensure_rows_length_are_equal!
 
-      entry
+      @matrix
     end
 
     def each

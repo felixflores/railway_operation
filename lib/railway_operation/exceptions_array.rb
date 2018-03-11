@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module RailwayOperation
   # Ensures that the array containing surrounds are of valid type
   class ExceptionsArray < TypedArray

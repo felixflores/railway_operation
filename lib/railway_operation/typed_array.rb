@@ -7,9 +7,7 @@ module RailwayOperation
     DEFAULT_MESSAGE = 'invalid element type, unable to add element'
 
     def initialize(array = nil, ensure_type_is:, error_message: DEFAULT_MESSAGE)
-      if array&.any? { |a| !element_acceptable?(a) }
-        raise UnacceptableMember, @error_message
-      end
+      raise UnacceptableMember, @error_message if array&.any? { |a| !element_acceptable?(a) }
 
       @types = wrap(ensure_type_is)
       @error_message = error_message
@@ -25,9 +23,7 @@ module RailwayOperation
     end
 
     def <<(element)
-      unless element_acceptable?(element)
-        raise UnacceptableMember, @error_message
-      end
+      raise UnacceptableMember, @error_message unless element_acceptable?(element)
 
       @arr << element
     end

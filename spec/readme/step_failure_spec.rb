@@ -55,4 +55,3 @@ describe Readme::FailingStep do
     )
   end
 end
-
