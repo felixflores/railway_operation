@@ -113,6 +113,23 @@ module RailwayOperation
         end
       end
 
+      def run_step(step_definition = nil, argument:, info:, surrounds: [])
+        return argument unless step_definition
+
+        pass_through = [DeepClone.clone(argument), info]
+
+        info.execution.last[:noop] = false
+        wrap(with: surrounds, pass_through: pass_through) do |*args|
+          if step_definition[:method].is_a?(Symbol)
+            public_send(step_definition[:method], *args)
+          elsif step_definition[:method].is_a?(Array)
+            step_definition[:method][0].send(step_definition[:method][1], *args)
+          else
+            step_definition[:method].call(*args)
+          end
+        end
+      end
+
       private
 
       def operation_with_defaults!(operation)
@@ -131,7 +148,8 @@ module RailwayOperation
         info.execution << {
           track_identifier: track_identifier,
           step_index: step_index,
-          argument: argument
+          argument: argument,
+          noop: true
         }
 
         return [argument, info] if step_index > operation.last_step_index
@@ -181,22 +199,6 @@ module RailwayOperation
             [@original_argument, info]
           else
             raise e
-          end
-        end
-      end
-
-      def run_step(step_definition = nil, argument:, info:, surrounds:)
-        return unless step_definition
-
-        pass_through = [DeepClone.clone(argument), info]
-
-        wrap(with: surrounds, pass_through: pass_through) do |*args|
-          if step_definition[:method].is_a?(Symbol)
-            public_send(step_definition[:method], *args)
-          elsif step_definition[:method].is_a?(Array)
-            step_definition[:method][0].send(step_definition[:method][1], *args)
-          else
-            step_definition[:method].call(*args)
           end
         end
       end

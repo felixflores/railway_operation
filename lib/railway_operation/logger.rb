@@ -21,5 +21,13 @@ module RailwayOperation
       @info[:execution] ||= []
       @info[:execution]
     end
+
+    def failed_steps
+      execution.select { |step| step[:failed] }
+    end
+
+    def failed?
+      execution.select { |step| step[:operation_failed] }
+    end
   end
 end
