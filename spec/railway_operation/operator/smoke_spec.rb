@@ -11,17 +11,14 @@ class HappyPath
 
   def step1(argument, **_info)
     argument << :step1
-    argument
   end
 
   def step2(argument, **_info)
     argument << :step2
-    argument
   end
 
   def step3(argument, **_info)
     argument << :step3
-    argument
   end
 end
 

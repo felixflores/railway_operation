@@ -20,12 +20,10 @@ module Readme
 
     def first_method(argument, **_info)
       argument << "Hello #{@someone}, from first_method."
-      argument
     end
 
     def another_method(argument, **_info)
       argument << 'Hello from another_method.'
-      argument
     end
 
     def final_method(argument, **)
@@ -36,7 +34,6 @@ module Readme
     def log_error(argument, execution:, **_info)
       error = execution.detect { |s| s[:failed] }[:error]
       argument << "Error #{error.class}"
-      argument
     end
   end
 end

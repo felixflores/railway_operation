@@ -115,7 +115,7 @@ module Readme
     include RailwayOperation::Operator
     class MyError < StandardError; end
 
-    fails_step MyError
+    fails_step << MyError
 
     add_step 0, :first_method
     add_step 0, :another_method

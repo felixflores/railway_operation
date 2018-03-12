@@ -57,13 +57,13 @@ module RailwayOperation
       extend Forwardable
 
       def_delegators :default_operation,
-                     :tracks,
                      :alias_tracks,
+                     :fails_operation,
+                     :fails_step,
                      :nest,
                      :operation_surrounds,
                      :step_surrounds,
-                     :fails_step,
-                     :fails_operation
+                     :tracks
 
       def operation(operation_or_name)
         @operations ||= {}
@@ -118,11 +118,12 @@ module RailwayOperation
 
         pass_through = [DeepClone.clone(argument), info]
 
-        info.execution.last[:noop] = false
+        info.current_step[:noop] = false
         wrap(with: surrounds, pass_through: pass_through) do |*args|
-          if step_definition[:method].is_a?(Symbol)
+          case step_definition[:method]
+          when Symbol
             public_send(step_definition[:method], *args)
-          elsif step_definition[:method].is_a?(Array)
+          when Array
             step_definition[:method][0].send(step_definition[:method][1], *args)
           else
             step_definition[:method].call(*args)
@@ -177,15 +178,14 @@ module RailwayOperation
             step_index: step_index + 1
           )
         rescue HaltOperation => e
-          info[:execution].last[:error] = e
-          info[:execution].last[:halted] = true
+          info.current_step[:error] = e
+          info.current_step[:halted] = true
           [e.argument, info]
         rescue => e
-          info[:execution].last[:error] = e
-          info[:execution].last[:failed] = true
+          info.current_step[:error] = e
+          info.current_step[:failed] = true
 
           if (operation.fails_step + [FailStep]).include?(e.class)
-
             run_steps(
               argument,
               info,
@@ -194,8 +194,7 @@ module RailwayOperation
               step_index: step_index + 1
             )
           elsif (operation.fails_operation + [FailOperation]).include?(e.class)
-            info[:execution].last[:failed_operation] = true
-
+            info.current_step[:failed_operation] = true
             [@original_argument, info]
           else
             raise e

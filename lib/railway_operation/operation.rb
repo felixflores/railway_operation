@@ -21,21 +21,20 @@ module RailwayOperation
     end
 
     def self.format_name(op_or_name)
-      if op_or_name.respond_to?(:name)
+      case op_or_name
+      when Operation
         op_or_name.name
-      else
+      when String, Symbol
         op_or_name.to_s.gsub(/\s+/, '_').downcase.to_sym
       end
     end
 
     def initialize(name)
-      @name = self.class.format_name(name)
-
-      @fails_step = ExceptionsArray.new
       @fails_operation = ExceptionsArray.new
+      @fails_step = ExceptionsArray.new
+      @name = self.class.format_name(name)
       @operation_surrounds = []
       @step_surrounds = EnsuredAccess.new({}) { StepsArray.new }
-
       @track_alias = {}
       @tracks = FilledMatrix.new(row_type: StepsArray)
     end

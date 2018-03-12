@@ -4,7 +4,7 @@ module RailwayOperation
   # This is intended to extend  the functionality of a normal
   # hash to make it easier to inspect the log
   class Logger < Delegator
-    def initialize(info)
+    def initialize(info = {})
       raise 'Must be a kind of hash' unless info.is_a?(Hash)
       @info = info
     end
@@ -20,6 +20,10 @@ module RailwayOperation
     def execution
       @info[:execution] ||= []
       @info[:execution]
+    end
+
+    def current_step
+      @info[:execution].last
     end
 
     def failed_steps
