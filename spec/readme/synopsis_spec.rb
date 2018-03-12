@@ -34,13 +34,22 @@ end
 describe Readme::Synopsis do
   let(:argument) { [] }
   it 'executes methods in the order they are specified' do
-    result, _info = described_class.run(argument)
+    result, info = described_class.run(argument)
 
     expect(result).to eq(
       [
         'Hello someone, from first_method.',
         'Hello from another_method.',
         'Hello from final_method.'
+      ]
+    )
+
+    expect(info.execution).to eq(
+      [
+        { track_identifier: 0, step_index: 0, argument: [], noop: false},
+        { track_identifier: 0, step_index: 1, argument: ['Hello someone, from first_method.'], noop: false},
+        { track_identifier: 0, step_index: 2, argument: ['Hello someone, from first_method.', 'Hello from another_method.'], noop: false},
+        { track_identifier: 0, step_index: 3, argument: ['Hello someone, from first_method.', 'Hello from another_method.', 'Hello from final_method.'], noop: true},
       ]
     )
   end

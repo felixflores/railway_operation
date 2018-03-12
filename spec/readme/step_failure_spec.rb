@@ -24,16 +24,16 @@ module Readme
 
     def another_method(argument, **_info)
       argument << 'Hello from another_method.'
+      raise MyError
     end
 
     def final_method(argument, **)
       argument << 'Hello from final_method.'
-      raise MyError
     end
 
-    def log_error(argument, execution:, **_info)
-      error = execution.detect { |s| s[:failed] }[:error]
-      argument << "Error #{error.class}"
+    def log_error(argument, info)
+      error = info.failed_steps.last
+      argument << "Error #{error[:error].class}"
     end
   end
 end
@@ -46,7 +46,6 @@ describe Readme::FailingStep do
     expect(result).to eq(
       [
         'Hello someone, from first_method.',
-        'Hello from another_method.',
         'Error Readme::FailingStep::MyError'
       ]
     )

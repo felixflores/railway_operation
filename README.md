@@ -25,6 +25,8 @@ Then in any of your ruby class `include RailwayOperation::Operator`.
 ## Basic Usage
 Let's say we have the following class
 
+[./spec/readme/synopsis_spec.rb](https://github.com/felixflores/railway_operation/blob/master/spec/readme/synopsis_spec.rb)
+
 ```ruby
 module Readme
   class Synopsis
@@ -109,6 +111,8 @@ result, info = Readme::Synopsis.run(argument)
 ## Multitrack Execution
 Let's say we want to log an error in case something goes wrong along the execution chain. We can modify our class with the following
 
+[./spec/readme/synopsis_spec.rb](https://github.com/felixflores/railway_operation/blob/master/spec/readme/synopsis_spec.rb)
+
 ```ruby
 module Readme
   class FailingStep
@@ -120,12 +124,13 @@ module Readme
     add_step 0, :first_method
     add_step 0, :another_method
     add_step 0, :final_method
-    add_step 1, :log_error # note that add_step's parmeter is 1
+    add_step 1, :log_error                 # note that add_step's parmeter is 1
 
     ...
 
-    def log_error(argument, error:, **)
-      argument << "Error #{error.class}"
+    def log_error(argument, info)
+      error = info.failed_steps.last
+      argument << "Error #{error[:error].class}"
     end
   end
 end
@@ -151,7 +156,7 @@ def another_method(argument, **)
 end
 ```
 
-`result` will be `['Hello somebody, from first_method.', 'Error MyError']`
+`result` will be `['Hello somebody, from first_method.', 'Readme::FailingStep::MyError']`
 
 In order to explain how this works, it's important to cover several key concepts. To declare a step at its simplest for, `add_step(<track_id>, <method>)` is used. In order to explain what those parameters means, it's important to define a few terms and concepts. 
 

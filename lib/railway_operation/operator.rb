@@ -119,14 +119,14 @@ module RailwayOperation
         pass_through = [DeepClone.clone(argument), info]
 
         info.current_step[:noop] = false
-        wrap(with: surrounds, pass_through: pass_through) do |*args|
+        wrap(with: surrounds, pass_through: pass_through) do |arg, inf|
           case step_definition[:method]
           when Symbol
-            public_send(step_definition[:method], *args)
+            public_send(step_definition[:method], arg, inf)
           when Array
-            step_definition[:method][0].send(step_definition[:method][1], *args)
+            step_definition[:method][0].send(step_definition[:method][1], arg, inf)
           else
-            step_definition[:method].call(*args)
+            step_definition[:method].call(arg, inf)
           end
         end
       end
