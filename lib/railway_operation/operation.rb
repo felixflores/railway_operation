@@ -6,11 +6,12 @@ module RailwayOperation
   class Operation
     extend Forwardable
 
+    # This track index is reserved so that we have a track that does
+    # not have any steps
+    NOOP_TRACK = 0
+
     attr_reader :name
-    attr_accessor :fails_step,
-                  :fails_operation,
-                  :step_exceptions,
-                  :operation_surrounds,
+    attr_accessor :operation_surrounds,
                   :step_surrounds,
                   :track_alias,
                   :tracks
@@ -30,13 +31,11 @@ module RailwayOperation
     end
 
     def initialize(name)
-      @fails_operation = ExceptionsArray.new
-      @fails_step = ExceptionsArray.new
       @name = self.class.format_name(name)
       @operation_surrounds = []
-      @step_surrounds = EnsuredAccess.new({}) { StepsArray.new }
+      @step_surrounds = Generic::EnsuredAccess.new({}) { StepsArray.new }
       @track_alias = {}
-      @tracks = FilledMatrix.new(row_type: StepsArray)
+      @tracks = Generic::FilledMatrix.new(row_type: StepsArray)
     end
 
     def [](track_identifier, step_index = nil)
@@ -54,17 +53,22 @@ module RailwayOperation
     end
 
     def add_step(
-      track_indentifier,
+      track_identifier,
       method,
       success: nil,
       failure: nil,
       &block
     )
-      self[track_indentifier, last_step_index + 1] = {
+      self[track_identifier, last_step_index + 1] = {
         method: block || method,
         success: success,
         failure: failure
       }
+    end
+
+    def stepper_function(fn = nil, &block)
+      return @stepper_function if !fn && !block
+      @stepper_function = block || fn
     end
 
     def alias_tracks(mapping = {})
@@ -93,6 +97,10 @@ module RailwayOperation
       else
         @track_alias[track_identifier]
       end
+    end
+
+    def noop_track
+      0
     end
   end
 end

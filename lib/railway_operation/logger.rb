@@ -1,9 +1,18 @@
 # frozen_string_literal: true
 
 module RailwayOperation
-  # This is intended to extend  the functionality of a normal
+  # This is intended to extend the functionality of a normal
   # hash to make it easier to inspect the log
   class Logger < Delegator
+    def self.log(info)
+      new(info)
+    end
+
+    def self.new(logger_or_hash = {})
+      return logger_or_hash if logger_or_hash.is_a?(Logger)
+      super
+    end
+
     def initialize(info = {})
       raise 'Must be a kind of hash' unless info.is_a?(Hash)
       @info = info

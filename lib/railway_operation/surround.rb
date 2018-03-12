@@ -28,10 +28,17 @@ module RailwayOperation
     def send_surround(surround, args)
       case surround
       when Symbol
+        # surround :my_method
         send(surround, *args) { yield }
       when Array
+        # surround [MyClass, :method]
         surround[0].send(surround[1], *args) { yield }
       when Proc
+        # surround do |op|
+        # ...
+        # op.call
+        # ...
+        # end
         surround.call(-> { yield }, *args)
       else
         yield
