@@ -6,9 +6,9 @@ module Readme
   class Synopsis
     include RailwayOperation::Operator
 
-    add_step 0, :first_method
-    add_step 0, :another_method
-    add_step 0, :final_method
+    add_step 1, :first_method
+    add_step 1, :another_method
+    add_step 1, :final_method
 
     def initialize(someone = 'someone')
       @someone = someone
@@ -44,7 +44,7 @@ describe Readme::Synopsis do
       ]
     )
 
-    expect(info.execution).to eq(
+    expect(RailwayOperation::Info.execution(info)).to eq(
       [
         { track_identifier: 0, step_index: 0, argument: [], noop: false},
         { track_identifier: 0, step_index: 1, argument: ['Hello someone, from first_method.'], noop: false},

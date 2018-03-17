@@ -4,6 +4,7 @@ module RailwayOperation
   # This is the value object that holds the information necessary to
   # run an operation
   class Operation
+    class NonExistentTrack < StandardError; end
     extend Forwardable
 
     # This track index is reserved so that we have a track that does
@@ -55,15 +56,11 @@ module RailwayOperation
     def add_step(
       track_identifier,
       method,
-      success: nil,
-      failure: nil,
       &block
     )
-      self[track_identifier, last_step_index + 1] = {
-        method: block || method,
-        success: success,
-        failure: failure
-      }
+      raise 'Track index must be a possitive integer' unless track_index(track_identifier).positive?
+
+      self[track_identifier, last_step_index + 1] = block || method
     end
 
     def stepper_function(fn = nil, &block)
@@ -76,9 +73,9 @@ module RailwayOperation
     end
 
     def nest(operation)
-      operation.tracks.each_with_index do |track, track_index|
+      operation.tracks.each_with_index do |track, track_identifier|
         track.each do |s|
-          tracks[track_index, last_step_index + 1] = s
+          tracks[track_identifier, last_step_index + 1] = s
         end
       end
     end
@@ -88,19 +85,20 @@ module RailwayOperation
     end
 
     def successor_track(track_identifier)
-      track_index(track_identifier) + 1
+      index = track_index(track_identifier) + 1
+      track_identifier(index)
+    end
+
+    def track_identifier(index)
+      @track_alias.invert[index] || index
     end
 
     def track_index(track_identifier)
-      if track_identifier.is_a?(Numeric)
-        track_identifier
-      else
-        @track_alias[track_identifier]
-      end
+      @track_alias[track_identifier] || track_identifier
     end
 
     def noop_track
-      0
+      NOOP_TRACK
     end
   end
 end

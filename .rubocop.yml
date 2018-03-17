@@ -23,3 +23,6 @@ Style/SymbolArray:
 
 Style/LambdaCall:
   Enabled: false
+
+Style/DoubleNegation:
+  Enabled: false

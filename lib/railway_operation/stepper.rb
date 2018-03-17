@@ -1,38 +1,36 @@
 # frozen_string_literal: true
 
 module RailwayOperation
+  # This class is responsible for calculating the vector of the next step
+  # during an operation execution
   class Stepper
     def self.step(*args, &block)
       new.step(*args, &block)
     end
 
     module Argument
-      DEFAULT = lambda do |_operation, argument:|
-        argument[:after]
+      DEFAULT = lambda do |argument, _info|
+        argument
       end
 
-      FAIL_STEP = lambda do |_operation, argument:|
-        argument[:before]
-      end
-
-      FAIL_OPERATION = lambda do |_operation, argument:|
-        argument[:original]
+      FAIL_OPERATION = lambda do |_argument, info|
+        Info.first_step(info)[:argument]
       end
     end
 
     module TrackIdentifier
-      DEFAULT = lambda do |_operation, track_identifier|
-        track_identifier
+      DEFAULT = lambda do |info|
+        info[:track_identifier]
       end
 
-      NOOP = lambda do |operation, _track_identifier|
+      NOOP = lambda do |operation:, **|
         operation.noop_track
       end
     end
 
     module StepIndex
-      DEFAULT = lambda do |_operation, step_index|
-        step_index + 1
+      DEFAULT = lambda do |info|
+        Info.last_step(info)[:step_index] + 1
       end
     end
 
@@ -48,14 +46,14 @@ module RailwayOperation
       vector[key]
     end
 
-    def step(stepper_function, &step_executor)
-      stepper_function.call(self, &step_executor)
+    def step(stepper_function, info, &step_executor)
+      stepper_function.call(self, info, &step_executor)
       self
     end
 
     def halt_operation
       vector.merge!(
-        argument: Argument::FAIL_STEP,
+        argument: Argument::DEFAULT,
         track_identifier: TrackIdentifier::NOOP
       )
     end
@@ -69,7 +67,7 @@ module RailwayOperation
 
     def fail_step
       vector.merge!(
-        argument: Argument::FAIL_OPERATION,
+        argument: Argument::DEFAULT,
         track_identifier: TrackIdentifier::DEFAULT
       )
     end
@@ -82,11 +80,20 @@ module RailwayOperation
     end
 
     def switch_to(specified_track)
-      vector[:track_identifier] = lambda do |operation, track_identifier|
-        if specified_track.is_a?(Proc)
-          specified_track.(operation, track_identifier)
-        else
-          specified_track
+      vector[:track_identifier] = lambda do |track_identifier:, operation:, **info|
+        begin
+          track = case specified_track
+                  when Proc
+                    specified_track.call(operation, track_identifier)
+                  else
+                    specified_track
+                  end
+
+          operation.track_index(track) # ensures that track index is found in the operation
+          TrackIdentifier::DEFAULT.(info.merge(operation: operation, track_identifier: track))
+        rescue Operation::NonExistentTrack
+          raise "Invalid stepper_function specification for '#{operation.name}'"\
+            "operation: invalid `switch_to(#{track})`"
         end
       end
     end
@@ -95,6 +102,19 @@ module RailwayOperation
       lambda do |operation, track_identifier|
         operation.successor_track(track_identifier)
       end
+    end
+
+    def raise_error(e, info)
+      Info.last_step(info)[:succeeded] = false
+      step_index = Info.execution(info).length - 1
+      track_identifier = Info.last_step(info)[:track_identifier]
+
+      message = "The operation was aborted because `#{e.class}' "\
+        "was raised on track #{track_identifier}, step #{step_index} of the operation."\
+        "\n\n"\
+        "#{TablePrint::Printer.table_print(Info.execution(info))}"
+
+      raise e, message, e.backtrace
     end
   end
 end

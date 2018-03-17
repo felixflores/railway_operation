@@ -5,7 +5,12 @@ module RailwayOperation
     def wrap(with:, pass_through: [], &body)
       @body = body
       @pass_through = pass_through
-      execute(with)
+
+      if with.empty?
+        @body.call(*@pass_through)
+      else
+        execute(with)
+      end
     end
 
     private
@@ -34,11 +39,7 @@ module RailwayOperation
         # surround [MyClass, :method]
         surround[0].send(surround[1], *args) { yield }
       when Proc
-        # surround do |op|
-        # ...
-        # op.call
-        # ...
-        # end
+        # surround ->(op) { ... op.call .. }
         surround.call(-> { yield }, *args)
       else
         yield

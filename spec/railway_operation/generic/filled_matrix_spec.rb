@@ -2,7 +2,7 @@
 
 require 'spec_helper'
 
-describe RailwayOperation::FilledMatrix do
+describe RailwayOperation::Generic::FilledMatrix do
   context 'accessor' do
     let(:m) { described_class.new([1, 2], [3, 4]) }
 

@@ -4,23 +4,14 @@ require 'spec_helper'
 
 class Sample < InfiniteSteps
   operation(:variation1) do |o|
-    o.add_step 0, :method3
-    o.add_step 0, :method2
-    o.add_step 0, :method1
+    o.add_step 1, :method3
+    o.add_step 1, :method2
+    o.add_step 1, :method1
   end
 
-  add_step 0, :method2, operation: :variation2
-  add_step 0, :method1, operation: :variation2
-  add_step 0, :method3, operation: :variation2
-
-  op = operation(:variation3)
-  add_step 0, :method1, operation: op
-  add_step 0, :method1, operation: op
-  add_step 0, :method3, operation: op
-
-  add_step 0, :method1
-  add_step 0, :method2
-  add_step 0, :method3
+  add_step 1, :method1
+  add_step 1, :method2
+  add_step 1, :method3
 end
 
 describe 'operation declaration RailwayOperation::Operator' do
@@ -32,18 +23,8 @@ describe 'operation declaration RailwayOperation::Operator' do
     expect(result_missing_method).to eq(result)
   end
 
-  it 'allow operation declaration using operation option' do
-    result, _info = Sample.run_variation2({})
-    expect(result['value']).to eq([:method2, :method1, :method3])
-  end
-
   it 'allow operation declaration using block syntax' do
     result, _info = Sample.run_variation1({})
     expect(result['value']).to eq([:method3, :method2, :method1])
-  end
-
-  it 'allows inline operation declaration' do
-    result, _info = Sample.run_variation3({})
-    expect(result['value']).to eq([:method1, :method1, :method3])
   end
 end

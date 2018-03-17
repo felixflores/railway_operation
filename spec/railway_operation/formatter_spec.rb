@@ -2,7 +2,7 @@
 
 require 'spec_helper'
 
-describe RailwayOperation::Visualizer do
+describe RailwayOperation::Formatter do
   let(:operation1) do
     op = RailwayOperation::Operation.new(:sample)
     op.alias_tracks('Operation 1' => 0, 'Operation 2' => 1)

@@ -5,9 +5,9 @@ require 'spec_helper'
 class HappyPath
   include RailwayOperation::Operator
 
-  add_step 0, :step1
-  add_step 0, :step2
-  add_step 0, :step3
+  add_step 1, :step1
+  add_step 1, :step2
+  add_step 1, :step3
 
   def step1(argument, **_info)
     argument << :step1
@@ -32,12 +32,11 @@ describe 'smoke test RailwayOperation::Operator' do
       result, info = HappyPath.run([])
 
       expect(result).to eq([:step1, :step2, :step3])
-      expect(info.execution).to eq(
+      expect(RailwayOperation::Info.execution(info)).to eq(
         [
-          { track_identifier: 0, step_index: 0, argument: [], noop: false },
-          { track_identifier: 0, step_index: 1, argument: [:step1], noop: false },
-          { track_identifier: 0, step_index: 2, argument: [:step1, :step2], noop: false },
-          { track_identifier: 0, step_index: 3, argument: [:step1, :step2, :step3], noop: true }
+          { track_identifier: 1, step_index: 0, argument: [], noop: false, method: :step1, succeeded: true },
+          { track_identifier: 1, step_index: 1, argument: [:step1], noop: false, method: :step2, succeeded: true },
+          { track_identifier: 1, step_index: 2, argument: [:step1, :step2], noop: false, method: :step3, succeeded: true }
         ]
       )
     end
@@ -48,28 +47,10 @@ describe 'smoke test RailwayOperation::Operator' do
 
       expect(argument).to eq(["don't change"])
       expect(result).to eq(["don't change", :step1, :step2, :step3])
-      expect(info.execution).to eq(
-        [
-          { track_identifier: 0, step_index: 0, argument: ["don't change"], noop: false },
-          { track_identifier: 0, step_index: 1, argument: ["don't change", :step1], noop: false },
-          { track_identifier: 0, step_index: 2, argument: ["don't change", :step1, :step2], noop: false },
-          { track_identifier: 0, step_index: 3, argument: ["don't change", :step1, :step2, :step3], noop: true }
-        ]
-      )
-    end
 
-    it 'can accept splatted hash' do
-      result, info = HappyPath.run([:original])
-
-      expect(result).to eq([:original, :step1, :step2, :step3])
-      expect(info.execution).to eq(
-        [
-          { track_identifier: 0, step_index: 0, argument: [:original], noop: false },
-          { track_identifier: 0, step_index: 1, argument: [:original, :step1], noop: false },
-          { track_identifier: 0, step_index: 2, argument: [:original, :step1, :step2], noop: false },
-          { track_identifier: 0, step_index: 3, argument: [:original, :step1, :step2, :step3], noop: true }
-        ]
-      )
+      expect(RailwayOperation::Info.execution(info)[0]).to include(argument: ["don't change"], noop: false, succeeded: true)
+      expect(RailwayOperation::Info.execution(info)[1]).to include(argument: ["don't change", :step1], noop: false, succeeded: true)
+      expect(RailwayOperation::Info.execution(info)[2]).to include(argument: ["don't change", :step1, :step2], noop: false, succeeded: true)
     end
 
     it 'does nothing when no steps are specified' do
@@ -77,9 +58,7 @@ describe 'smoke test RailwayOperation::Operator' do
       result, info = NoSteps.run(argument)
 
       expect(result).to eq(argument)
-      expect(info.execution).to eq(
-        [{ track_identifier: 0, step_index: 0, argument: 'noop', noop: true }]
-      )
+      expect(RailwayOperation::Info.execution(info)[0]).to be_nil
     end
   end
 end
