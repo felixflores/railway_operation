@@ -4,25 +4,22 @@ Gemspec/OrderedDependencies:
   Exclude:
     - 'railway_operation.gemspec'
 
-Metrics/LineLength:
-  Enabled: false
-
-Metrics/MethodLength:
-  Enabled: false
-
-Metrics/BlockLength:
-  Enabled: false
-
 Style/FrozenStringLiteralComment:
   Exclude:
     - 'Gemfile'
     - 'bin/console'
 
-Style/SymbolArray:
+Metrics/BlockLength:
   Enabled: false
-
+Metrics/LineLength:
+  Enabled: false
+Metrics/MethodLength:
+  Enabled: false
+Style/DoubleNegation:
+  Enabled: false
+Style/Lambda:
+  Enabled: false
 Style/LambdaCall:
   Enabled: false
-
-Style/DoubleNegation:
+Style/SymbolArray:
   Enabled: false

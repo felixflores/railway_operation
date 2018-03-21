@@ -4,11 +4,13 @@ require 'spec_helper'
 
 module Readme
   class Synopsis
-    include RailwayOperation::Operator
+    include RailwayOperation
 
-    add_step 1, :first_method
-    add_step 1, :another_method
-    add_step 1, :final_method
+    operation do |o|
+      o.add_step 1, :first_method
+      o.add_step 1, :another_method
+      o.add_step 1, :final_method
+    end
 
     def initialize(someone = 'someone')
       @someone = someone

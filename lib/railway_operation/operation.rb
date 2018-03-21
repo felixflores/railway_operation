@@ -72,14 +72,6 @@ module RailwayOperation
       @track_alias.merge!(mapping)
     end
 
-    def nest(operation)
-      operation.tracks.each_with_index do |track, track_identifier|
-        track.each do |s|
-          tracks[track_identifier, last_step_index + 1] = s
-        end
-      end
-    end
-
     def last_step_index
       tracks.max_column_index
     end

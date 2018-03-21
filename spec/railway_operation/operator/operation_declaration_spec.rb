@@ -9,9 +9,11 @@ class Sample < InfiniteSteps
     o.add_step 1, :method1
   end
 
-  add_step 1, :method1
-  add_step 1, :method2
-  add_step 1, :method3
+  operation do |o|
+    o.add_step 1, :method3
+    o.add_step 1, :method2
+    o.add_step 1, :method1
+  end
 end
 
 describe 'operation declaration RailwayOperation::Operator' do

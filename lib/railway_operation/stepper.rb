@@ -9,29 +9,17 @@ module RailwayOperation
     end
 
     module Argument
-      DEFAULT = lambda do |argument, _info|
-        argument
-      end
-
-      FAIL_OPERATION = lambda do |_argument, info|
-        Info.first_step(info)[:argument]
-      end
+      DEFAULT = ->(argument, _info) { argument }
+      FAIL_OPERATION = ->(_argument, info) { Info.first_step(info)[:argument] }
     end
 
     module TrackIdentifier
-      DEFAULT = lambda do |info|
-        info[:track_identifier]
-      end
-
-      NOOP = lambda do |operation:, **|
-        operation.noop_track
-      end
+      DEFAULT = ->(info) { info[:track_identifier] }
+      NOOP = ->(operation:, **) { operation.noop_track }
     end
 
     module StepIndex
-      DEFAULT = lambda do |info|
-        Info.last_step(info)[:step_index] + 1
-      end
+      DEFAULT = ->(info) { Info.last_step(info)[:step_index] + 1 }
     end
 
     def vector

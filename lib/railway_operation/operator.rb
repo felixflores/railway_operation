@@ -40,17 +40,8 @@ module RailwayOperation
     # assigned to the default operation is used.
     module ClassMethods
       include DynamicRun
-      extend Forwardable
 
-      def_delegators :default_operation,
-                     :add_step,
-                     :alias_tracks,
-                     :nest,
-                     :operation_surrounds,
-                     :step_surrounds,
-                     :stepper_function
-
-      def operation(operation_or_name)
+      def operation(operation_or_name = :default)
         @operations ||= {}
 
         name = Operation.format_name(operation_or_name)
@@ -62,10 +53,6 @@ module RailwayOperation
 
       def run(argument, operation: :default, **opts)
         new.run(argument, operation: operation, **opts)
-      end
-
-      def default_operation
-        operation(:default)
       end
     end
 
@@ -80,7 +67,8 @@ module RailwayOperation
       include Surround
 
       def run(argument, operation: :default, track_identifier: 1, step_index: 0, **info)
-        op = operation_with_defaults!(self.class.operation(operation))
+        op = self.class.operation(operation)
+
         wrap(with: op.operation_surrounds) do
           run_steps(
             argument,
@@ -92,8 +80,9 @@ module RailwayOperation
         end
       end
 
-      def run_step(argument, operation:, track_identifier:, step_index:, **info)
-        info.merge!(operation: operation, track_identifier: track_identifier, step_index: step_index)
+      def run_step(argument, operation: :default, track_identifier:, step_index:, **info)
+        op = self.class.operation(operation)
+        info.merge!(operation: op, track_identifier: track_identifier, step_index: step_index)
 
         Info.execution(info)[step_index] = {
           argument: argument,
@@ -132,18 +121,6 @@ module RailwayOperation
       end
 
       private
-
-      def operation_with_defaults!(operation)
-        default_operation = self.class.default_operation
-        return operation if operation == default_operation
-
-        operation.operation_surrounds ||= default_operation.operation_surrounds
-        operation.step_surrounds ||= default_operation.step_surrounds
-        operation.track_alias ||= default_operation.track_alias
-        operation.stepper_function(default_operation.stepper_function || DEFAULT_STRATEGY)
-
-        operation
-      end
 
       def run_steps(argument, operation:, track_identifier:, step_index:, **info)
         info.merge!(operation: operation, track_identifier: track_identifier, step_index: step_index)

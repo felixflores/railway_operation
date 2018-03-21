@@ -9,15 +9,16 @@ module Readme
     class MyError < StandardError; end
     class HaltingOperation < StandardError; end
 
-    alias_tracks alias1: 1, alias2: 3, error_track: 2
+    operation do |o|
+      o.tracks :alias1, :alias2, :error_track
+      o.stepper_function Strategy.capture(MyError, error_track: :error_track)
 
-    stepper_function Strategy.capture(MyError, error_track: :error_track)
-
-    add_step :alias1, :method_1
-    add_step :alias2, :method_2
-    add_step :alias1, :method_3
-    add_step :alias1, :method_4
-    add_step :error_track, :log_error
+      o.add_step :alias1, :method_1
+      o.add_step :alias2, :method_2
+      o.add_step :alias1, :method_3
+      o.add_step :alias1, :method_4
+      o.add_step :error_track, :log_error
+    end
 
     def initialize(someone = 'someone')
       @someone = someone
