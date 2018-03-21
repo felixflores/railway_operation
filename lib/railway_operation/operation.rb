@@ -14,8 +14,7 @@ module RailwayOperation
     attr_reader :name
     attr_accessor :operation_surrounds,
                   :step_surrounds,
-                  :track_alias,
-                  :tracks
+                  :track_alias
 
     def self.new(operation_or_name)
       return operation_or_name if operation_or_name.is_a?(Operation)
@@ -58,8 +57,7 @@ module RailwayOperation
       method,
       &block
     )
-      raise 'Track index must be a possitive integer' unless track_index(track_identifier).positive?
-
+      raise 'Track index must be a possitive integer' unless valid_track_id?(track_index(track_identifier))
       self[track_identifier, last_step_index + 1] = block || method
     end
 
@@ -68,8 +66,9 @@ module RailwayOperation
       @stepper_function = block || fn
     end
 
-    def alias_tracks(mapping = {})
-      @track_alias.merge!(mapping)
+    def tracks(*names)
+      return @tracks if names.empty?
+      @track_alias = [0, *names]
     end
 
     def last_step_index
@@ -82,15 +81,29 @@ module RailwayOperation
     end
 
     def track_identifier(index)
-      @track_alias.invert[index] || index
+      id = @track_alias[index] || index
+      raise "Unable to determine track_identifier for `#{index}`" unless valid_track_id?(id)
+
+      id
     end
 
     def track_index(track_identifier)
-      @track_alias[track_identifier] || track_identifier
+      index = @track_alias.index(track_identifier) || track_identifier
+      raise "Unable to determine track_index for `#{track_identifier}`" unless valid_index?(index)
+
+      index
     end
 
     def noop_track
       NOOP_TRACK
+    end
+
+    def valid_index?(index)
+      index.is_a?(Numeric) && index.positive?
+    end
+
+    def valid_track_id?(id)
+      id.is_a?(Symbol) || valid_index?(id)
     end
   end
 end
