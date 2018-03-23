@@ -9,17 +9,17 @@ module RailwayOperation
     end
 
     module Argument
-      DEFAULT = ->(argument, _info) { argument }
-      FAIL_OPERATION = ->(_argument, info) { Info.first_step(info)[:argument] }
+      DEFAULT = ->(argument, **) { argument }
+      FAIL_OPERATION = ->(_argument, execution:, **) { execution.first_step[:argument] }
     end
 
     module TrackIdentifier
-      DEFAULT = ->(info) { info[:track_identifier] }
-      NOOP = ->(operation:, **) { operation.noop_track }
+      DEFAULT = ->(track_identifier, **) { track_identifier }
+      NOOP = ->(_, operation:, **) { operation.noop_track }
     end
 
     module StepIndex
-      DEFAULT = ->(info) { Info.last_step(info)[:step_index] + 1 }
+      DEFAULT = ->(step_index, **) { step_index + 1 }
     end
 
     def vector
@@ -54,10 +54,7 @@ module RailwayOperation
     end
 
     def fail_step
-      vector.merge!(
-        argument: Argument::DEFAULT,
-        track_identifier: TrackIdentifier::DEFAULT
-      )
+      continue
     end
 
     def continue
@@ -68,7 +65,7 @@ module RailwayOperation
     end
 
     def switch_to(specified_track)
-      vector[:track_identifier] = lambda do |track_identifier:, operation:, **info|
+      vector[:track_identifier] = lambda do |track_identifier, operation:, **info|
         begin
           track = case specified_track
                   when Proc
@@ -78,7 +75,7 @@ module RailwayOperation
                   end
 
           operation.track_index(track) # ensures that track index is found in the operation
-          TrackIdentifier::DEFAULT.(info.merge(operation: operation, track_identifier: track))
+          TrackIdentifier::DEFAULT.(track, info.merge(operation: operation))
         rescue Operation::NonExistentTrack
           raise "Invalid stepper_function specification for '#{operation.name}'"\
             "operation: invalid `switch_to(#{track})`"
@@ -92,17 +89,15 @@ module RailwayOperation
       end
     end
 
-    def raise_error(e, info)
-      Info.last_step(info)[:succeeded] = false
-      step_index = Info.execution(info).length - 1
-      track_identifier = Info.last_step(info)[:track_identifier]
+    def error_message(e, info)
+      info.execution.last_step[:succeeded] = false
+      step_index = info.execution.length - 1
+      track_identifier = info.execution.last_step[:track_identifier]
 
-      message = "The operation was aborted because `#{e.class}' "\
+      "The operation was aborted because `#{e.class}' "\
         "was raised on track #{track_identifier}, step #{step_index} of the operation."\
         "\n\n"\
-        "#{TablePrint::Printer.table_print(Info.execution(info))}"
-
-      raise e, message, e.backtrace
+        "#{TablePrint::Printer.table_print(info.execution)}"
     end
   end
 end

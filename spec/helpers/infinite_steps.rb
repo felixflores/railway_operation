@@ -3,7 +3,7 @@
 require 'railway_operation'
 
 class InfiniteSteps
-  include RailwayOperation::Operator
+  include RailwayOperation
 
   def method_missing(method, *args, **info, &block)
     return super unless method.match?(/step|method|fail/)

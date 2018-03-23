@@ -46,14 +46,14 @@ describe Readme::Synopsis do
       ]
     )
 
-    expect(RailwayOperation::Info.execution(info)).to eq(
-      [
-        { track_identifier: 0, step_index: 0, argument: [], noop: false},
-        { track_identifier: 0, step_index: 1, argument: ['Hello someone, from first_method.'], noop: false},
-        { track_identifier: 0, step_index: 2, argument: ['Hello someone, from first_method.', 'Hello from another_method.'], noop: false},
-        { track_identifier: 0, step_index: 3, argument: ['Hello someone, from first_method.', 'Hello from another_method.', 'Hello from final_method.'], noop: true},
-      ]
-    )
+    # expect(RailwayOperation::Info.execution(info)).to eq(
+    #   [
+    #     { track_identifier: 0, step_index: 0, argument: [], noop: false},
+    #     { track_identifier: 0, step_index: 1, argument: ['Hello someone, from first_method.'], noop: false},
+    #     { track_identifier: 0, step_index: 2, argument: ['Hello someone, from first_method.', 'Hello from another_method.'], noop: false},
+    #     { track_identifier: 0, step_index: 3, argument: ['Hello someone, from first_method.', 'Hello from another_method.', 'Hello from final_method.'], noop: true},
+    #   ]
+    # )
   end
 
   it 'executes operation with the initialized parameter' do

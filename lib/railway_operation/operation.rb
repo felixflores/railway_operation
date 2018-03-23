@@ -52,23 +52,17 @@ module RailwayOperation
       ] = step
     end
 
-    def add_step(
-      track_identifier,
-      method,
-      &block
-    )
-      raise 'Track index must be a possitive integer' unless valid_track_id?(track_index(track_identifier))
+    def add_step(track_identifier, method = nil, &block)
       self[track_identifier, last_step_index + 1] = block || method
     end
 
     def stepper_function(fn = nil, &block)
-      return @stepper_function if !fn && !block
-      @stepper_function = block || fn
+      @stepper_function ||= fn || block
     end
 
     def tracks(*names)
       return @tracks if names.empty?
-      @track_alias = [0, *names]
+      @track_alias = [NOOP_TRACK, *names]
     end
 
     def last_step_index
@@ -89,7 +83,7 @@ module RailwayOperation
 
     def track_index(track_identifier)
       index = @track_alias.index(track_identifier) || track_identifier
-      raise "Unable to determine track_index for `#{track_identifier}`" unless valid_index?(index)
+      raise "Invalid track `#{track_identifier}`" unless valid_index?(index)
 
       index
     end
@@ -97,6 +91,8 @@ module RailwayOperation
     def noop_track
       NOOP_TRACK
     end
+
+    private
 
     def valid_index?(index)
       index.is_a?(Numeric) && index.positive?

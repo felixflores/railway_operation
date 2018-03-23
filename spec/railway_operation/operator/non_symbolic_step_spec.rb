@@ -15,22 +15,24 @@ class AClass
 end
 
 class POROClass
-  include RailwayOperation::Operator
+  include RailwayOperation
 
-  add_step 0, :step1
-  add_step 0, AClass
-  add_step 0, [AClass, :other]
-  add_step(
-    0,
-    lambda do |argument, **_info|
-      argument[:in_lambda] = true
+  operation do |o|
+    o.add_step 1, :step1
+    o.add_step 1, AClass
+    o.add_step 1, [AClass, :other]
+    o.add_step(
+      1,
+      lambda do |argument, **_info|
+        argument[:in_lambda] = true
+        argument
+      end
+    )
+
+    o.add_step(1) do |argument, **_info|
+      argument[:in_block] = true
       argument
     end
-  )
-
-  add_step(0) do |argument, **_info|
-    argument[:in_block] = true
-    argument
   end
 
   def step1(argument, **_info)

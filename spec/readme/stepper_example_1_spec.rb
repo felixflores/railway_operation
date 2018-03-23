@@ -47,8 +47,8 @@ module Readme
 end
 
 describe 'Failing Step' do
-  it 'uses pessimistic strategy' do
-    result, info = Readme::FailingStep.run([])
+  it 'uses capture strategy' do
+    result, _info = Readme::FailingStep.run([])
     expect(result).to eq([:error])
   end
 end

@@ -8,17 +8,17 @@ module RailwayOperation
       begin
         _result, new_info = step.call
 
-        if Info.last_step(new_info)[:errors]
+        if new_info.execution.last_step[:errors]
           stepper.fail_step
           stepper.switch_to(error_track || stepper.successor_track)
         else
           stepper.continue
         end
       rescue => e
-        stepper.raise_error(e, info) unless errors.include?(e.class)
+        raise(e, stepper.error_message(e, info), e.backtrace) unless errors.include?(e.class)
 
-        Info.last_step(new_info || info)[:succeeded] = false
-        stepper.fail_operation
+        (new_info || info).execution.last_step.errors << { exception: e }
+        stepper.fail_step
         stepper.switch_to(error_track || stepper.successor_track)
       end
     end

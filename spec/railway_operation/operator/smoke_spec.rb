@@ -3,11 +3,13 @@
 require 'spec_helper'
 
 class HappyPath
-  include RailwayOperation::Operator
+  include RailwayOperation
 
-  add_step 1, :step1
-  add_step 1, :step2
-  add_step 1, :step3
+  operation do |o|
+    o.add_step 1, :step1
+    o.add_step 1, :step2
+    o.add_step 1, :step3
+  end
 
   def step1(argument, **_info)
     argument << :step1
@@ -23,7 +25,7 @@ class HappyPath
 end
 
 class NoSteps
-  include RailwayOperation::Operator
+  include RailwayOperation
 end
 
 describe 'smoke test RailwayOperation::Operator' do

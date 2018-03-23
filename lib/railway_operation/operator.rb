@@ -45,10 +45,11 @@ module RailwayOperation
         @operations ||= {}
 
         name = Operation.format_name(operation_or_name)
-        operation = @operations[name] ||= Operation.new(operation_or_name)
+        op = @operations[name] ||= Operation.new(operation_or_name)
 
         # See operation/nested_operation_spec.rb for details for block syntax
-        block_given? ? yield(operation) : operation
+
+        block_given? ? yield(op) : op
       end
 
       def run(argument, operation: :default, **opts)
@@ -70,77 +71,89 @@ module RailwayOperation
         op = self.class.operation(operation)
 
         wrap(with: op.operation_surrounds) do
-          run_steps(
+          _run(
             argument,
-            operation: op,
+            Info.new(operation: op, **info),
             track_identifier: track_identifier,
-            step_index: step_index,
-            **info
+            step_index: step_index
           )
         end
       end
 
       def run_step(argument, operation: :default, track_identifier:, step_index:, **info)
         op = self.class.operation(operation)
-        info.merge!(operation: op, track_identifier: track_identifier, step_index: step_index)
 
-        Info.execution(info)[step_index] = {
+        _run_step(
+          argument,
+          Info.new(operation: op, **info),
+          track_identifier: track_identifier,
+          step_index: step_index
+        )
+      end
+
+      private
+
+      def _run_step(argument, info, track_identifier:, step_index:)
+        step = info.execution.add_step(
           argument: argument,
           track_identifier: track_identifier,
-          step_index: step_index,
-          method: nil,
-          noop: true
-        }
-
-        step_definition = operation[track_identifier, step_index]
-        return [argument, info] unless step_definition
-
-        surrounds = operation.step_surrounds[track_identifier] + operation.step_surrounds['*']
-        pass_through = [DeepClone.clone(argument), info]
-
-        Info.execution(info)[step_index].merge!(
-          method: step_definition,
-          noop: false
+          step_index: step_index
         )
 
-        new_argument = wrap(with: surrounds, pass_through: pass_through) do |arg, inf|
+        step_definition = info.operation[track_identifier, step_index]
+        unless step_definition
+          step.noop!
+          return [argument, info]
+        end
+
+        step.start!
+
+        surrounds = info.operation.step_surrounds[track_identifier] + info.operation.step_surrounds['*']
+        pass_through = [DeepClone.clone(argument), info]
+
+        step[:method] = step_definition
+        step[:noop] = false
+
+        new_argument = wrap(with: surrounds, pass_through: pass_through) do |arg, inf_b|
           case step_definition
           when Symbol
             # add_step 1, :method
-            public_send(step_definition, arg, inf)
+            public_send(step_definition, arg, inf_b)
           when Array
             # add_step 1, [MyClass, :method]
-            step_definition[0].send(step_definition[1], arg, inf)
+            step_definition[0].send(step_definition[1], arg, inf_b)
           else
             # add_step 1, ->(argument, info) { ... }
-            step_definition.call(arg, inf)
+            step_definition.call(arg, inf_b)
           end
         end
 
         [new_argument, info]
       end
 
-      private
-
-      def run_steps(argument, operation:, track_identifier:, step_index:, **info)
-        info.merge!(operation: operation, track_identifier: track_identifier, step_index: step_index)
-
-        return [argument, info] if step_index > operation.last_step_index
+      def _run(argument, info, track_identifier:, step_index:)
+        return [argument, info] if step_index > info.operation.last_step_index
 
         new_argument = new_info = nil
-        vector = Stepper.step(operation.stepper_function || DEFAULT_STRATEGY, info) do
-          new_argument, new_info = run_step(argument, info)
-          Info.execution(new_info)[step_index][:succeeded] = true
+        stepper_fn = info.operation.stepper_function || DEFAULT_STRATEGY
+
+        vector = Stepper.step(stepper_fn, info) do
+          new_argument, new_info = _run_step(
+            argument,
+            info,
+            track_identifier: track_identifier,
+            step_index: step_index
+          )
 
           [new_argument, new_info]
         end
 
-        run_steps(
-          vector[:argument].((new_argument || argument), info),
-          (new_info || info).merge(
-            step_index: vector[:step_index].(new_info || info),
-            track_identifier: vector[:track_identifier].(new_info || info)
-          )
+        inf = new_info || info
+        _run(
+          vector[:argument].(new_argument || argument, inf),
+          inf,
+          track_identifier: vector[:track_identifier].(track_identifier, inf),
+          step_index: vector[:step_index].(step_index, inf)
         )
       end
     end
