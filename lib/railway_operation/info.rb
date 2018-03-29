@@ -21,6 +21,23 @@ module RailwayOperation
     def execution
       self[:execution] = Execution.new(self[:execution] || [])
     end
+
+    def display
+      table = Terminal::Table.new
+      table.title = 'Execution'
+      table.headings = ['', 'Track', 'Success', 'Method', '# of Errors']
+      table.rows = execution.map do |s|
+        [
+          s[:step_index],
+          s[:track_identifier],
+          s.success?,
+          s[:noop] ? '--' : (s[:method].is_a?(Proc) ? 'Proc' : s[:method]),
+          s[:errors]
+        ]
+      end
+
+      table
+    end
   end
 
   # This is intended to extend the functionality of a normal
@@ -98,6 +115,10 @@ module RailwayOperation
       started? && self[:ended_at]
     end
 
+    def success?
+      errors.empty? && !self[:failed]
+    end
+
     def noop?
       self[:noop]
     end
@@ -111,13 +132,19 @@ module RailwayOperation
       self[:ended_at] = timestamp
     end
 
-    def noop!
-      self[:started_at] = self[:ended_at] = timestamp
-      self[:noop] = true
+    def fail!(error)
+      self[:failed_at] = timestamp
+      add_error(error)
     end
 
-    def success?
-      error.empty? && !self[:failed]
+    def add_error(error)
+      errors << error if error
+    end
+
+    def noop!
+      self[:started_at] = self[:ended_at] = timestamp
+      self[:method] = nil
+      self[:noop] = true
     end
 
     def errors

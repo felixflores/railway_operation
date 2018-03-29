@@ -96,8 +96,7 @@ module RailwayOperation
 
       "The operation was aborted because `#{e.class}' "\
         "was raised on track #{track_identifier}, step #{step_index} of the operation."\
-        "\n\n"\
-        "#{TablePrint::Printer.table_print(info.execution)}"
+        "\n\n#{info.display}\n\n"
     end
   end
 end

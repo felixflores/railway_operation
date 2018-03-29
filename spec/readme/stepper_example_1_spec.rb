@@ -37,7 +37,7 @@ module Readme
     end
 
     def method_4(_argument, **_info)
-      raise MyError, 'uh oh'
+      raise StandardError, 'uh oh'
     end
 
     def log_error(argument, **)

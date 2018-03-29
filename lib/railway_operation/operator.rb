@@ -74,7 +74,7 @@ module RailwayOperation
           _run(
             argument,
             Info.new(operation: op, **info),
-            track_identifier: track_identifier,
+            track_identifier: op.track_identifier(track_identifier),
             step_index: step_index
           )
         end
@@ -86,7 +86,7 @@ module RailwayOperation
         _run_step(
           argument,
           Info.new(operation: op, **info),
-          track_identifier: track_identifier,
+          track_identifier: op.track_identifier(track_identifier),
           step_index: step_index
         )
       end
@@ -128,6 +128,7 @@ module RailwayOperation
           end
         end
 
+        step.end!
         [new_argument, info]
       end
 

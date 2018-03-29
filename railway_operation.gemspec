@@ -39,7 +39,7 @@ Gem::Specification.new do |spec|
 
   spec.add_runtime_dependency 'ruby-graphviz'
   spec.add_runtime_dependency 'ruby_deep_clone'
-  spec.add_runtime_dependency 'table_print'
+  spec.add_runtime_dependency 'terminal-table'
 
   spec.add_development_dependency 'bundler', '~> 1.14'
   spec.add_development_dependency 'pry-byebug'
