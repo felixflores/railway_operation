@@ -37,7 +37,6 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ['lib']
 
-  spec.add_runtime_dependency 'ruby-graphviz'
   spec.add_runtime_dependency 'ruby_deep_clone'
   spec.add_runtime_dependency 'terminal-table'
 

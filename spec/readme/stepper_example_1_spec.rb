@@ -36,7 +36,8 @@ module Readme
       argument << 3
     end
 
-    def method_4(_argument, **_info)
+    def method_4(argument, **_info)
+      # argument << 4
       raise StandardError, 'uh oh'
     end
 

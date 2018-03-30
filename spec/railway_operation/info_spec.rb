@@ -144,4 +144,32 @@ describe RailwayOperation::Info do
       end
     end
   end
+
+  context '#display' do
+    let(:subject) { described_class.new(operation: nil) }
+
+    it 'can display an empty info' do
+      expect(subject.display.to_s).to eq(
+        "+--+-------+---------+--------+--------+\n"\
+        "|              Execution               |\n"\
+        "+--+-------+---------+--------+--------+\n"\
+        "|  | Track | Success | Method | Errors |\n"\
+        "+--+-------+---------+--------+--------+\n"\
+        '+--+-------+---------+--------+--------+'
+      )
+    end
+
+    it 'can display info with step' do
+      subject.execution << { track_identifier: 1, step_index: 0 }
+      expect(subject.display.to_s).to eq(
+        "+---+-------+---------+--------+--------+\n"\
+        "|               Execution               |\n"\
+        "+---+-------+---------+--------+--------+\n"\
+        "|   | Track | Success | Method | Errors |\n"\
+        "+---+-------+---------+--------+--------+\n"\
+        "| 0 | 1     | true    |        | []     |\n"\
+        '+---+-------+---------+--------+--------+'
+      )
+    end
+  end
 end

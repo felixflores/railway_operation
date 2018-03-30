@@ -5,17 +5,18 @@ module RailwayOperation
     # Ensure that only elements of specified type(s) are accepted in the array
     class TypedArray < Delegator
       class UnacceptableMember < StandardError; end
-      DEFAULT_MESSAGE = 'invalid element type, unable to add element'
+      DEFAULT_MESSAGE = ->(type) { "unacceptable element in array, all elements must be of type #{type}" }.freeze
 
-      def initialize(array = nil, ensure_type_is:, error_message: DEFAULT_MESSAGE)
-        raise UnacceptableMember, @error_message if array&.any? { |a| !element_acceptable?(a) }
+      def initialize(array = [], ensure_type_is:, error_message: nil)
+        raise(ArgumentError, 'must be initialized with an array') unless array.is_a?(Array)
 
         @types = wrap(ensure_type_is)
-        @error_message = error_message
-        @arr = array || []
+        @error_message = error_message || DEFAULT_MESSAGE.(ensure_type_is)
+        __setobj__(array)
       end
 
       def __setobj__(arr)
+        raise UnacceptableMember, @error_message unless array_acceptable?(arr)
         @arr = arr
       end
 
@@ -25,8 +26,11 @@ module RailwayOperation
 
       def <<(element)
         raise UnacceptableMember, @error_message unless element_acceptable?(element)
-
         @arr << element
+      end
+
+      def array_acceptable?(arr)
+        arr&.all? { |a| element_acceptable?(a) }
       end
 
       def element_acceptable?(element)
@@ -46,9 +50,7 @@ module RailwayOperation
 
       # Taken from ActiveSupport Array.wrap https://apidock.com/rails/Array/wrap/class
       def wrap(object)
-        if object.nil?
-          []
-        elsif object.respond_to?(:to_ary)
+        if object.respond_to?(:to_ary)
           object.to_ary || [object]
         else
           [object]

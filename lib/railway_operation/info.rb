@@ -25,7 +25,7 @@ module RailwayOperation
     def display
       table = Terminal::Table.new
       table.title = 'Execution'
-      table.headings = ['', 'Track', 'Success', 'Method', '# of Errors']
+      table.headings = ['', 'Track', 'Success', 'Method', 'Errors']
       table.rows = execution.map do |s|
         [
           s[:step_index],

@@ -11,10 +11,9 @@ module RailwayOperation
     # not have any steps
     NOOP_TRACK = 0
 
-    attr_reader :name
+    attr_reader :name, :track_alias
     attr_accessor :operation_surrounds,
-                  :step_surrounds,
-                  :track_alias
+                  :step_surrounds
 
     def self.new(operation_or_name)
       return operation_or_name if operation_or_name.is_a?(Operation)
@@ -62,16 +61,22 @@ module RailwayOperation
 
     def tracks(*names)
       return @tracks if names.empty?
-      @track_alias = [NOOP_TRACK, *names]
+      @track_alias = [noop_track, *names]
     end
 
     def last_step_index
       tracks.max_column_index
     end
 
-    def successor_track(track_identifier)
-      index = track_index(track_identifier) + 1
-      track_identifier(index)
+    def successor_track(track_id)
+      next_index = track_index(track_id) + 1
+      return if tracks.count <= next_index
+
+      if track_id.is_a?(Numeric)
+        next_index
+      else
+        track_identifier(next_index)
+      end
     end
 
     def track_identifier(index)
@@ -83,7 +88,7 @@ module RailwayOperation
 
     def track_index(track_identifier)
       index = @track_alias.index(track_identifier) || track_identifier
-      raise "Invalid track `#{track_identifier}`" unless valid_index?(index)
+      raise "Invalid track `#{track_identifier}`, must be a positive integer" unless valid_index?(index)
 
       index
     end
@@ -99,7 +104,7 @@ module RailwayOperation
     end
 
     def valid_track_id?(id)
-      id.is_a?(Symbol) || valid_index?(id)
+      valid_index?(id) || true
     end
   end
 end

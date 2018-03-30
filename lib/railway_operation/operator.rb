@@ -70,7 +70,7 @@ module RailwayOperation
       def run(argument, operation: :default, track_identifier: 1, step_index: 0, **info)
         op = self.class.operation(operation)
 
-        wrap(with: op.operation_surrounds) do
+        wrap(*op.operation_surrounds) do
           _run(
             argument,
             Info.new(operation: op, **info),
@@ -114,7 +114,7 @@ module RailwayOperation
         step[:method] = step_definition
         step[:noop] = false
 
-        new_argument = wrap(with: surrounds, pass_through: pass_through) do |arg, inf_b|
+        new_argument = wrap(*surrounds, pass_through: pass_through) do |arg, inf_b|
           case step_definition
           when Symbol
             # add_step 1, :method

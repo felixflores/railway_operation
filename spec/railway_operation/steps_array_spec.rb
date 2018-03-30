@@ -22,19 +22,19 @@ describe RailwayOperation::StepsArray do
 
     it 'does not allow any other types' do
       expect { subject << 1 }.to raise_error(
-        RailwayOperation::TypedArray::UnacceptableMember
+        RailwayOperation::Generic::TypedArray::UnacceptableMember
       )
 
       expect { subject << {} }.to raise_error(
-        RailwayOperation::TypedArray::UnacceptableMember
+        RailwayOperation::Generic::TypedArray::UnacceptableMember
       )
 
       expect { subject << 1.2 }.to raise_error(
-        RailwayOperation::TypedArray::UnacceptableMember
+        RailwayOperation::Generic::TypedArray::UnacceptableMember
       )
 
       expect { subject << Object }.to raise_error(
-        RailwayOperation::TypedArray::UnacceptableMember
+        RailwayOperation::Generic::TypedArray::UnacceptableMember
       )
     end
   end
