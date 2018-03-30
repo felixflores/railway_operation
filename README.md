@@ -124,7 +124,7 @@ module Readme
     add_step 0, :first_method
     add_step 0, :another_method
     add_step 0, :final_method
-    add_step 1, :log_error                 # note that add_step's parmeter is 1
+    add_step 1, :log_error                 # note that add_step's argument is 1
 
     ...
 
