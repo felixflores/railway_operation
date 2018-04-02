@@ -26,6 +26,8 @@ module RailwayOperation
         op_or_name.name
       when String, Symbol
         op_or_name.to_s.gsub(/\s+/, '_').downcase.to_sym
+      else
+        raise 'invalid operation name'
       end
     end
 

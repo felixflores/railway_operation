@@ -23,6 +23,10 @@ describe RailwayOperation::Operation do
 
       expect(described_class.format_name(operation4)).to eq(:operation_name)
     end
+
+    it 'raises an error if name is not a string or symbol' do
+      expect { described_class.format_name(1) }.to raise_error('invalid operation name')
+    end
   end
 
   context '#operation_surrounds' do

@@ -9,8 +9,6 @@ Style/FrozenStringLiteralComment:
     - 'Gemfile'
     - 'bin/console'
 
-Style/WordArray:
-  Enabled: false
 Metrics/BlockLength:
   Enabled: false
 Metrics/LineLength:
@@ -19,9 +17,13 @@ Metrics/MethodLength:
   Enabled: false
 Style/DoubleNegation:
   Enabled: false
+Style/IfUnlessModifier:
+  Enabled: false
 Style/Lambda:
   Enabled: false
 Style/LambdaCall:
   Enabled: false
 Style/SymbolArray:
+  Enabled: false
+Style/WordArray:
   Enabled: false

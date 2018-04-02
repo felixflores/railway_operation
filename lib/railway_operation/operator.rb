@@ -3,10 +3,6 @@
 require 'deep_clone'
 
 module RailwayOperation
-  # When RailwayOperation::Operator is include into any Ruby object
-  # it extends that ruby class with the necessary methods to allow
-  # objects to conform to the railway oriented convention.
-  # See https://vimeo.com/97344498 for a high level overview
   module Operator
     DEFAULT_STRATEGY = Strategy::DEFAULT
 
@@ -109,22 +105,22 @@ module RailwayOperation
         step.start!
 
         surrounds = info.operation.step_surrounds[track_identifier] + info.operation.step_surrounds['*']
-        pass_through = [DeepClone.clone(argument), info]
+        wrap_arguments = [DeepClone.clone(argument), info]
 
         step[:method] = step_definition
         step[:noop] = false
 
-        new_argument = wrap(*surrounds, pass_through: pass_through) do |arg, inf_b|
+        new_argument = wrap(*surrounds, arguments: wrap_arguments) do
           case step_definition
           when Symbol
             # add_step 1, :method
-            public_send(step_definition, arg, inf_b)
+            public_send(step_definition, *wrap_arguments)
           when Array
             # add_step 1, [MyClass, :method]
-            step_definition[0].send(step_definition[1], arg, inf_b)
+            step_definition[0].send(step_definition[1], *wrap_arguments)
           else
             # add_step 1, ->(argument, info) { ... }
-            step_definition.call(arg, inf_b)
+            step_definition.call(*wrap_arguments)
           end
         end
 

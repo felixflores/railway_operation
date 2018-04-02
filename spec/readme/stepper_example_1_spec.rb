@@ -37,8 +37,7 @@ module Readme
     end
 
     def method_4(argument, **_info)
-      # argument << 4
-      raise StandardError, 'uh oh'
+      argument << 4
     end
 
     def log_error(argument, **)
@@ -47,9 +46,9 @@ module Readme
   end
 end
 
-describe 'Failing Step' do
+describe 'Normal execution' do
   it 'uses capture strategy' do
     result, _info = Readme::FailingStep.run([])
-    expect(result).to eq([:error])
+    expect(result).to eq([1, 3, 4])
   end
 end

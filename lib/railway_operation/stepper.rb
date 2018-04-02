@@ -10,7 +10,7 @@ module RailwayOperation
 
     module Argument
       DEFAULT = ->(argument, **) { argument }
-      FAIL_OPERATION = ->(_argument, execution:, **) { execution.first_step[:argument] }
+      FAIL_OPERATION = ->(_argument, execution:, **) { execution.first[:argument] }
     end
 
     module TrackIdentifier
