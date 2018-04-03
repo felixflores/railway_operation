@@ -3,7 +3,7 @@
 require 'spec_helper'
 
 module Readme
-  class Synopsis
+  class Example1
     include RailwayOperation
 
     operation do |o|
@@ -18,23 +18,21 @@ module Readme
 
     def first_method(argument, **)
       argument << "Hello #{@someone}, from first_method."
-      argument
     end
 
     def another_method(argument, **)
       argument << 'Hello from another_method.'
-      argument
     end
 
     def final_method(argument, **)
       argument << 'Hello from final_method.'
-      argument
     end
   end
 end
 
-describe Readme::Synopsis do
+describe Readme::Example1 do
   let(:argument) { [] }
+
   it 'executes methods in the order they are specified' do
     result, info = described_class.run(argument)
 
@@ -47,6 +45,19 @@ describe Readme::Synopsis do
     )
 
     expect(info.execution.all?(&:completed?)).to eq(true)
+    expect(info.execution).to be_success
+    expect(info.execution).to_not be_failed
+    expect(info.display).to eq(
+      "+---+-------+---------+----------------+--------+\n"\
+      "|                   Execution                   |\n"\
+      "+---+-------+---------+----------------+--------+\n"\
+      "|   | Track | Success | Method         | Errors |\n"\
+      "+---+-------+---------+----------------+--------+\n"\
+      "| 0 |       | true    | first_method   | []     |\n"\
+      "| 1 |       | true    | another_method | []     |\n"\
+      "| 2 |       | true    | final_method   | []     |\n"\
+      '+---+-------+---------+----------------+--------+'
+    )
   end
 
   it 'executes operation with the initialized parameter' do

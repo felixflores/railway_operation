@@ -25,11 +25,9 @@ Then in any of your ruby class `include RailwayOperation::Operator`.
 ## Basic Usage
 Let's say we have the following class
 
-[./spec/readme/synopsis_spec.rb](https://github.com/felixflores/railway_operation/blob/master/spec/readme/synopsis_spec.rb)
-
 ```ruby
 module Readme
-  class Synopsis
+  class Example1_1
     def initialize(someone = 'someone')
       @someone = someone
     end
@@ -52,12 +50,12 @@ end
 We could perform the follow chain of execution, to yield the following result.
 
 ```ruby
-synopsis = Readme::Synopsis.new('Felix')
+ex1 = Readme::Example1.new('Felix')
 argument = []
 
-result = synopsis.first_method([])
-result = synopsis.another_method(result)
-result = synopsis.final_method(result)
+result = ex1.first_method([])
+result = ex1.another_method(result)
+result = ex1.final_method(result)
 
 result == [
   'Hello Felix, from first_method.'
@@ -66,19 +64,47 @@ result == [
 ]
 ```
 
-RailwayOperation provides a way for you to declare the same execution chain as a series of steps in an operation. By doing `include RailwayOperation::Operator` to your class,  the `.add_step` class method is made available and a corresponding `#run` and `.run` method could be used to perform the execution chain.
+RailwayOperation provides a way for you to declare the same execution chain as a series of steps in an operation. 
+
+If we add the following
 
 ```ruby
 module Readme
-  class Synopsis
-    include RailwayOperation::Operator
+  class Example1
+    include RailwayOperation
+```
 
-    add_step 0, :first_method
-    add_step 0, :another_method
-    add_step 0, :final_method
+to your class, we can then declare an operation block
+
+```ruby
+operation do |o|
+  o.add_step :normal, :first_method
+  o.add_step :normal, :another_method
+  o.add_step :normal, :final_method
+end
+```
+
+And finally we need to modify the method signature slightly to accept a hash. This hash contains information about the execution of the steps, and can also be leveraged to pass information from one step to another without altering the result. (We will cover this topic in more detail shortly)
+
+[./spec/readme/example_1\_spec.rb](https://github.com/felixflores/railway_operation/blob/master/spec/readme/example_1_spec.rb)
+
+```ruby
+module Readme
+  class Example1
+    include RailwayOperation
+
+    operation do |o|
+      o.add_step :normal, :first_method
+      o.add_step :normal, :another_method
+      o.add_step :normal, :final_method
+    end
+
+    def initialize(someone = 'someone')
+      @someone = someone
+    end
 
     def first_method(argument, **)
-      argument << 'Hello from first_method.'
+      argument << "Hello #{@someone}, from first_method."
     end
 
     def another_method(argument, **)
@@ -90,8 +116,12 @@ module Readme
     end
   end
 end
+```
 
-result, info = Readme::Synopsis.new('Felix').run(argument)
+Now we can call the `.run` method on the class to yeild the same result.
+
+```ruby
+result, info = Readme::Example1.new('Felix').run(argument)
 
 result == [
   'Hello Felix, from first_method.'
@@ -103,10 +133,10 @@ result == [
 Additionally, if your class does not require any arguments in its initializer you can call.
 
 ```ruby
-result, info = Readme::Synopsis.run(argument)
+result, info = Readme::Example1.run(argument)
 ```
 
-*Let's ignore the info value for now. We will cover that later.*
+One important detail to call out here is that calling run returns the result object (which is the return value of the operation) and the info object which is a hash like object containing information about the execution of the operation. See 
 
 ## Multitrack Execution
 Let's say we want to log an error in case something goes wrong along the execution chain. We can modify our class with the following

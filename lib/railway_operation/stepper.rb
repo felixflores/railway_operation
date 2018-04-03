@@ -58,10 +58,7 @@ module RailwayOperation
     end
 
     def continue
-      vector.merge!(
-        argument: Argument::DEFAULT,
-        track_identifier: TrackIdentifier::DEFAULT
-      )
+      vector
     end
 
     def switch_to(specified_track)

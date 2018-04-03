@@ -49,7 +49,7 @@ describe RailwayOperation::Operation do
 
   context '#track_alias' do
     it 'is a hash' do
-      expect(subject.track_alias).to be_a(Hash)
+      expect(subject.track_alias).to be_a(Array)
     end
   end
 

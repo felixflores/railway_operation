@@ -149,7 +149,7 @@ describe RailwayOperation::Info do
     let(:subject) { described_class.new(operation: nil) }
 
     it 'can display an empty info' do
-      expect(subject.display.to_s).to eq(
+      expect(subject.display).to eq(
         "+--+-------+---------+--------+--------+\n"\
         "|              Execution               |\n"\
         "+--+-------+---------+--------+--------+\n"\
@@ -161,7 +161,7 @@ describe RailwayOperation::Info do
 
     it 'can display info with step' do
       subject.execution << { track_identifier: 1, step_index: 0 }
-      expect(subject.display.to_s).to eq(
+      expect(subject.display).to eq(
         "+---+-------+---------+--------+--------+\n"\
         "|               Execution               |\n"\
         "+---+-------+---------+--------+--------+\n"\

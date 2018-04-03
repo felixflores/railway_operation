@@ -7,10 +7,6 @@ module RailwayOperation
     class NonExistentTrack < StandardError; end
     extend Forwardable
 
-    # This track index is reserved so that we have a track that does
-    # not have any steps
-    NOOP_TRACK = 0
-
     attr_reader :name, :track_alias
     attr_accessor :operation_surrounds,
                   :step_surrounds
@@ -35,7 +31,7 @@ module RailwayOperation
       @name = self.class.format_name(name)
       @operation_surrounds = []
       @step_surrounds = Generic::EnsuredAccess.new({}) { StepsArray.new }
-      @track_alias = {}
+      @track_alias = [noop_track]
       @tracks = Generic::FilledMatrix.new(row_type: StepsArray)
     end
 
@@ -66,6 +62,11 @@ module RailwayOperation
       @track_alias = [noop_track, *names]
     end
 
+    def strategy(tracks, stepper_fn)
+      tracks(*tracks)
+      stepper_function(stepper_fn)
+    end
+
     def last_step_index
       tracks.max_column_index
     end
@@ -81,9 +82,9 @@ module RailwayOperation
       end
     end
 
-    def track_identifier(index)
-      id = @track_alias[index] || index
-      raise "Unable to determine track_identifier for `#{index}`" unless valid_track_id?(id)
+    def track_identifier(index_or_id)
+      id = index_or_id.is_a?(Integer) ? @track_alias[index_or_id] : index_or_id
+      raise "Unable to determine track_identifier for `#{index_or_id}`" unless valid_track_id?(id)
 
       id
     end
@@ -96,7 +97,7 @@ module RailwayOperation
     end
 
     def noop_track
-      NOOP_TRACK
+      :noop_track
     end
 
     private

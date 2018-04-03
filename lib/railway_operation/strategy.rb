@@ -2,28 +2,55 @@
 
 module RailwayOperation
   class Strategy
-    DEFAULT = lambda do |stepper, info, *error_continues, error_track: nil, &step|
+    DEFAULT = lambda do |stepper, _info, &step|
       begin
         _result, new_info = step.call
 
-        if new_info.execution.success?
-          stepper.continue
-        else
-          stepper.fail_step
-          stepper.switch_to(error_track || stepper.successor_track)
+        if new_info.execution.last.failed?
+          stepper.fail_operation
         end
-      rescue => e
-        (new_info || info).execution.last.fail!(exception: e)
-        raise(e, stepper.error_message(e, info), e.backtrace) unless error_continues.include?(e.class)
 
-        stepper.fail_step
-        stepper.switch_to(error_track || stepper.successor_track)
+        stepper.continue
+      rescue StandardError => e
+        raise e, e.message, e.backtrace
       end
     end
 
-    def self.capture(*errors, error_track:)
-      lambda do |stepper, info, &step|
-        Strategy::DEFAULT.(stepper, info, *errors, error_track: error_track, &step)
+    def self.standard
+      tracks = [:normal, :error_track, :fail_track]
+
+      stepper_fn = Strategy.norm_exceptional(
+        norm: {
+          normal: ->(execution) { !execution.errored? },
+          error_track: ->(execution) { execution.errored? },
+          fail_track: ->(execution) { execution.failed? }
+        }
+      )
+
+       [tracks, stepper_fn]
+    end
+
+    def self.norm_exceptional(norm: {}, exceptional: {})
+      lambda do |stepper, _, &step|
+        begin
+          _, new_info = step.call
+
+          track_switch = norm.detect do |_, predicate|
+            predicate.call(new_info.execution)
+          end.first
+
+          stepper.switch_to(track_switch) if track_switch
+          stepper.continue
+        rescue StandardError, Runtime => e
+          track_switch = exceptional.detect do |_, predicate|
+            predicate.call(e)
+          end.first
+
+          raise(e, e.message, e.backtrace) unless track_switch
+
+          stepper.switch_to(track_switch)
+          stepper.continue
+        end
       end
     end
   end

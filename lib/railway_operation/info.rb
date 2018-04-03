@@ -36,7 +36,7 @@ module RailwayOperation
         ]
       end
 
-      table
+      table.to_s
     end
   end
 
@@ -67,8 +67,20 @@ module RailwayOperation
       last
     end
 
+    def add_error(error)
+      last.add_error(error)
+    end
+
+    def errored?
+      any?(&:errored?)
+    end
+
     def success?
       all?(&:success?)
+    end
+
+    def failed?
+      !success?
     end
 
     def completed?
@@ -117,6 +129,14 @@ module RailwayOperation
 
     def success?
       errors.empty? && !self[:failed]
+    end
+
+    def errored?
+      !errors.empty?
+    end
+
+    def failed?
+      !!self[:failed]
     end
 
     def noop?
