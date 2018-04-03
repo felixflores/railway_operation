@@ -8,9 +8,9 @@ end
 
 require 'pry-byebug'
 require 'bundler/setup'
+require 'railway_operation'
 require 'helpers/infinite_steps'
 require 'helpers/fake_logger'
-require 'railway_operation'
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

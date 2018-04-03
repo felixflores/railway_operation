@@ -2,7 +2,7 @@
 
 module RailwayOperation
   # Ensures that the array containing surrounds are of valid type
-  class StepsArray < TypedArray
+  class StepsArray < Generic::TypedArray
     def initialize(*args, **options)
       types = [Symbol, Proc, String, Array]
 

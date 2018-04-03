@@ -4,16 +4,16 @@ module RailwayOperation
   # This is the value object that holds the information necessary to
   # run an operation
   class Operation
+    class NonExistentTrack < StandardError; end
     extend Forwardable
 
-    attr_reader :name
-    attr_accessor :fails_step,
-                  :fails_operation,
-                  :step_exceptions,
-                  :operation_surrounds,
-                  :step_surrounds,
-                  :track_alias,
-                  :tracks
+    # This track index is reserved so that we have a track that does
+    # not have any steps
+    NOOP_TRACK = 0
+
+    attr_reader :name, :track_alias
+    attr_accessor :operation_surrounds,
+                  :step_surrounds
 
     def self.new(operation_or_name)
       return operation_or_name if operation_or_name.is_a?(Operation)
@@ -26,17 +26,17 @@ module RailwayOperation
         op_or_name.name
       when String, Symbol
         op_or_name.to_s.gsub(/\s+/, '_').downcase.to_sym
+      else
+        raise 'invalid operation name'
       end
     end
 
     def initialize(name)
-      @fails_operation = ExceptionsArray.new
-      @fails_step = ExceptionsArray.new
       @name = self.class.format_name(name)
       @operation_surrounds = []
-      @step_surrounds = EnsuredAccess.new({}) { StepsArray.new }
+      @step_surrounds = Generic::EnsuredAccess.new({}) { StepsArray.new }
       @track_alias = {}
-      @tracks = FilledMatrix.new(row_type: StepsArray)
+      @tracks = Generic::FilledMatrix.new(row_type: StepsArray)
     end
 
     def [](track_identifier, step_index = nil)
@@ -53,46 +53,60 @@ module RailwayOperation
       ] = step
     end
 
-    def add_step(
-      track_indentifier,
-      method,
-      success: nil,
-      failure: nil,
-      &block
-    )
-      self[track_indentifier, last_step_index + 1] = {
-        method: block || method,
-        success: success,
-        failure: failure
-      }
+    def add_step(track_identifier, method = nil, &block)
+      self[track_identifier, last_step_index + 1] = block || method
     end
 
-    def alias_tracks(mapping = {})
-      @track_alias.merge!(mapping)
+    def stepper_function(fn = nil, &block)
+      @stepper_function ||= fn || block
     end
 
-    def nest(operation)
-      operation.tracks.each_with_index do |track, track_index|
-        track.each do |s|
-          tracks[track_index, last_step_index + 1] = s
-        end
-      end
+    def tracks(*names)
+      return @tracks if names.empty?
+      @track_alias = [noop_track, *names]
     end
 
     def last_step_index
       tracks.max_column_index
     end
 
-    def successor_track(track_identifier)
-      track_index(track_identifier) + 1
+    def successor_track(track_id)
+      next_index = track_index(track_id) + 1
+      return if tracks.count <= next_index
+
+      if track_id.is_a?(Numeric)
+        next_index
+      else
+        track_identifier(next_index)
+      end
+    end
+
+    def track_identifier(index)
+      id = @track_alias[index] || index
+      raise "Unable to determine track_identifier for `#{index}`" unless valid_track_id?(id)
+
+      id
     end
 
     def track_index(track_identifier)
-      if track_identifier.is_a?(Numeric)
-        track_identifier
-      else
-        @track_alias[track_identifier]
-      end
+      index = @track_alias.index(track_identifier) || track_identifier
+      raise "Invalid track `#{track_identifier}`, must be a positive integer" unless valid_index?(index)
+
+      index
+    end
+
+    def noop_track
+      NOOP_TRACK
+    end
+
+    private
+
+    def valid_index?(index)
+      index.is_a?(Numeric) && index.positive?
+    end
+
+    def valid_track_id?(id)
+      valid_index?(id) || true
     end
   end
 end

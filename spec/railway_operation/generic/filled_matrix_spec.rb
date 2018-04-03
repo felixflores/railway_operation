@@ -2,7 +2,7 @@
 
 require 'spec_helper'
 
-describe RailwayOperation::FilledMatrix do
+describe RailwayOperation::Generic::FilledMatrix do
   context 'accessor' do
     let(:m) { described_class.new([1, 2], [3, 4]) }
 
@@ -14,6 +14,11 @@ describe RailwayOperation::FilledMatrix do
     it 'second argument is column' do
       expect(m[0, 0]).to eq(1)
       expect(m[0, 1]).to eq(2)
+    end
+
+    it 'allows row to be accessed' do
+      expect(m[0]).to eq([1, 2])
+      expect(m[1]).to eq([3, 4])
     end
   end
 
