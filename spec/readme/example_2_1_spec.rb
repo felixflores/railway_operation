@@ -37,7 +37,20 @@ end
 
 describe 'Normal execution' do
   it 'runs on the normal track' do
-    result, _info = Readme::Example2_1.run([])
+    result, info = Readme::Example2_1.run([])
+
     expect(result).to eq([1, 2])
+    expect(info.execution.display).to eq(
+      "+---+-------+---------+----------+--------+\n"\
+      "|                Execution                |\n"\
+      "+---+-------+---------+----------+--------+\n"\
+      "|   | Track | Success | Method   | Errors |\n"\
+      "+---+-------+---------+----------+--------+\n"\
+      "| 0 |       | true    | method_1 | []     |\n"\
+      "| 1 |       | true    | method_2 | []     |\n"\
+      "| 2 |       | true    | --       | []     |\n"\
+      "| 3 |       | true    | --       | []     |\n"\
+      '+---+-------+---------+----------+--------+'
+    )
   end
 end
