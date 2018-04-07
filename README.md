@@ -27,7 +27,7 @@ Let's say we have the following class
 
 ```ruby
 module Readme
-  class Example1_1
+  class Example1
     def initialize(someone = 'someone')
       @someone = someone
     end
@@ -51,11 +51,11 @@ We could perform the follow chain of execution, to yield the following result.
 
 ```ruby
 ex1 = Readme::Example1.new('Felix')
-argument = []
 
-result = ex1.first_method([])
-result = ex1.another_method(result)
-result = ex1.final_method(result)
+argument = []
+argument = ex1.first_method(argument)
+argument = ex1.another_method(argument)
+result = ex1.final_method(argument)
 
 result == [
   'Hello Felix, from first_method.'
@@ -77,14 +77,14 @@ module Readme
 to your class, we can then declare an operation block
 
 ```ruby
-operation do |o|
-  o.add_step :normal, :first_method
-  o.add_step :normal, :another_method
-  o.add_step :normal, :final_method
-end
+    operation do |o|
+      o.add_step 1, :first_method
+      o.add_step 1, :another_method
+      o.add_step 1, :final_method
+    end
 ```
 
-And finally we need to modify the method signature slightly to accept a hash. This hash contains information about the execution of the steps, and can also be leveraged to pass information from one step to another without altering the result. (We will cover this topic in more detail shortly)
+Before we can take advantage of RailwayOperation we need to modify our method signatures slightly from `def first_method(argument)` to `def first_method(arugment, **)`. This allows our methods to accept an addtional has called info (we will cover this topic of `info` in more detail shortly)
 
 [./spec/readme/example_1\_spec.rb](https://github.com/felixflores/railway_operation/blob/master/spec/readme/example_1_spec.rb)
 
@@ -94,9 +94,9 @@ module Readme
     include RailwayOperation
 
     operation do |o|
-      o.add_step :normal, :first_method
-      o.add_step :normal, :another_method
-      o.add_step :normal, :final_method
+      o.add_step 1, :first_method
+      o.add_step 1, :another_method
+      o.add_step 1, :final_method
     end
 
     def initialize(someone = 'someone')
@@ -121,6 +121,7 @@ end
 Now we can call the `.run` method on the class to yeild the same result.
 
 ```ruby
+arugment = []
 result, info = Readme::Example1.new('Felix').run(argument)
 
 result == [
@@ -134,64 +135,139 @@ Additionally, if your class does not require any arguments in its initializer yo
 
 ```ruby
 result, info = Readme::Example1.run(argument)
+
+result == [
+  'Hello someone, from first_method.',
+  'Hello from another_method.',
+  'Hello from final_method.'
+]
 ```
 
-One important detail to call out here is that calling run returns the result object (which is the return value of the operation) and the info object which is a hash like object containing information about the execution of the operation. See 
+One important detail to call out here is that calling run returns the `result` object (which is the return value of the operation) and an `info` object which is a hash like object containing information about the execution of the operation. To see a brief overview of the types of information `info` see [./spec/readme/example\_1_spec.rb](https://github.com/felixflores/railway_operation/blob/master/spec/readme/example_1_spec.rb)
+
+A more detailed explanation of `info` is on the [RailwayOperation: Info](https://github.com/felixflores/railway_operation#info) section.
 
 ## Multitrack Execution
-Let's say we want to log an error in case something goes wrong along the execution chain. We can modify our class with the following
+So far we've seen a single track execution of an operation. The track is the first argument of the `add_step` method. In our previous example all our steps executed on track 1.
 
-[./spec/readme/synopsis_spec.rb](https://github.com/felixflores/railway_operation/blob/master/spec/readme/synopsis_spec.rb)
+![basic - page 1](https://user-images.githubusercontent.com/65030/38450687-5067bd94-39f0-11e8-9b85-198ba7b28b1b.png)
+
+
+Let's now consider the following example
 
 ```ruby
 module Readme
-  class FailingStep
-    include RailwayOperation::Operator
-    class MyError < StandardError; end
+  class Example2_1
+    include RailwayOperation
 
-    fails_step << MyError
+    operation do |o|
+      o.add_step 1, :method_1
+      o.add_step 1, :method_2
+      o.add_step 2, :method_3
+      o.add_step 2, :method_4
+    end
 
-    add_step 0, :first_method
-    add_step 0, :another_method
-    add_step 0, :final_method
-    add_step 1, :log_error                 # note that add_step's argument is 1
+    def initialize(someone = 'someone')
+      @someone = someone
+    end
 
-    ...
+    def method_1(argument, **)
+      argument << 1
+    end
 
-    def log_error(argument, info)
-      error = info.failed_steps.last
-      argument << "Error #{error[:error].class}"
+    def method_2(argument, **)
+      argument << 2
+    end
+
+    def method_3(argument, **)
+      argument << 3
+    end
+
+    def method_4(argument, **)
+      argument << 4
     end
   end
 end
 ```
 
-If we changed `first_method` to
+When we invoke `run` this we'll get the following result.
 
 ```ruby
-def first_method(argument, **)
-  argument << 'Hello from first_method.'
-  raise MyError
+result, _info = Readme::Example2_1.run([])
+result == [1, 2]
+```
+
+What happened here? Instead of `method_3` and `method_4` being on track one, they are now set to execute on track 2. So when we ran the operation it only ran the methods on track one.
+
+![example 2 1 - page 1 1](https://user-images.githubusercontent.com/65030/38447196-f4b65800-39c9-11e8-94fc-310c4931d7fb.png)
+
+In order to change the execution path of the operation to track 2 we need to introduce a new concept called `stepper_function`. The `stepper_function` is responsible for executing each step of the operation and deciding the direction of next step of the operation.
+
+```
+operation do |o|
+  o.stepper_function do |stepper, _, &step|
+    argument, _ = step.call
+
+    if argument.length >= 2
+      stepper.switch_to(2)
+    end
+
+    stepper.continue
+  end
+
+  o.add_step 1, :method_1
+  o.add_step 1, :method_2
+  o.add_step 2, :method_3
+  o.add_step 2, :method_4
 end
 ```
 
-And `ReadMe::FailingStep.run([])`, then `result` will be ['Error MyError']
-
-Alternatively if we changed 
+Now, when we call run we get the folling result.
 
 ```ruby
-def another_method(argument, **)
-  argument << 'Hello from another_method.'
-  raise MyError
+argument = []
+result, _info = Readme::Example2_2.run(argument)
+result == [1, 2, 3, 4]
+```
+
+![example 2 2 - page 1](https://user-images.githubusercontent.com/65030/38449378-5b1c6ac8-39dc-11e8-9cf9-f9e5c1a40cb6.png)
+
+For now you can think of the `stepper_function` as a `lambda` that surrounds a step (this is not entirely accurate, but it's good enough for now). This `lambda` has the following shape.
+
+```ruby
+lambda do |stepper, info, &step|
+
+  ...
+
 end
 ```
 
-`result` will be `['Hello somebody, from first_method.', 'Readme::FailingStep::MyError']`
+The `stepper` argument is control structure that dictates the movement of the execution. 
 
-In order to explain how this works, it's important to cover several key concepts. To declare a step at its simplest for, `add_step(<track_id>, <method>)` is used. In order to explain what those parameters means, it's important to define a few terms and concepts. 
+```ruby
+stepper.continue
+stepper.switch_to(specified_track)
+stepper.fail_step
+stepper.successor_track
+stepper.halt_operation
+stepper.fail_operation
+```
+In our example we used the `switch_to` and `continue` methods to switch from track 1 to 2 and continue the execution of our operation.
+
+The `info` argument is the same `info` object we've seen from calling `run`, it is passed from one step to another.
+
+Finally, `step` is a `lambda` which runs the step once called. Overlayed on top of our previous diagram, it would roughly look like this.
+
+![example 2 2 info - page 1](https://user-images.githubusercontent.com/65030/38450987-c93630ac-39f5-11e8-96cc-283fd00ff5ab.png)
+
+To overlay the `stepper_function` in our example more concretely, looks something like this.
+
+![example 2 2 decisions - page 1 2](https://user-images.githubusercontent.com/65030/38451168-33f5fc12-39f9-11e8-9b5f-6e6e979afe0f.png)
 
 
+## Info
 
+TODO
 
 ## Development
 

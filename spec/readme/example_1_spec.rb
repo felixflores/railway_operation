@@ -47,7 +47,7 @@ describe Readme::Example1 do
     expect(info.execution.all?(&:completed?)).to eq(true)
     expect(info.execution).to be_success
     expect(info.execution).to_not be_failed
-    expect(info.display).to eq(
+    expect(info.execution.display).to eq(
       "+---+-------+---------+----------------+--------+\n"\
       "|                   Execution                   |\n"\
       "+---+-------+---------+----------------+--------+\n"\

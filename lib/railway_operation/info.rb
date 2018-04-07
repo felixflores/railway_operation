@@ -21,23 +21,6 @@ module RailwayOperation
     def execution
       self[:execution] = Execution.new(self[:execution] || [])
     end
-
-    def display
-      table = Terminal::Table.new
-      table.title = 'Execution'
-      table.headings = ['', 'Track', 'Success', 'Method', 'Errors']
-      table.rows = execution.map do |s|
-        [
-          s[:step_index],
-          s[:track_identifier],
-          s.success?,
-          s[:noop] ? '--' : (s[:method].is_a?(Proc) ? 'Proc' : s[:method]),
-          s[:errors]
-        ]
-      end
-
-      table.to_s
-    end
   end
 
   # This is intended to extend the functionality of a normal
@@ -95,6 +78,23 @@ module RailwayOperation
       }
 
       last
+    end
+
+    def display
+      table = Terminal::Table.new
+      table.title = 'Execution'
+      table.headings = ['', 'Track', 'Success', 'Method', 'Errors']
+      table.rows = self.map do |s|
+        [
+          s[:step_index],
+          s[:track_identifier],
+          s.success?,
+          s[:noop] ? '--' : (s[:method].is_a?(Proc) ? 'Proc' : s[:method]),
+          s[:errors]
+        ]
+      end
+
+      table.to_s
     end
   end
 
