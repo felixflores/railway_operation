@@ -47,7 +47,7 @@ describe 'Normal execution' do
     expect(result).to eq([1, 2, 3, 4])
     expect(info.execution).to_not be_success
 
-    expect(info.display.to_s).to eq(
+    expect(info.execution.display).to eq(
       "+---+-------------+---------+----------+--------+\n"\
       "|                   Execution                   |\n"\
       "+---+-------------+---------+----------+--------+\n"\
