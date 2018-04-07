@@ -264,6 +264,39 @@ To overlay the `stepper_function` in our example more concretely, looks somethin
 
 ![example 2 2 decisions - page 1 2](https://user-images.githubusercontent.com/65030/38451168-33f5fc12-39f9-11e8-9b5f-6e6e979afe0f.png)
 
+The last concept needed for the multi-tract execution context is the idea of track alias. Instead of simply relying on the ordinal track index of 1, 2, 3, .... We can instead map those indices to a symbol.
+
+
+```ruby
+operation do |o|
+  o.tracks :track1, :track2
+
+  o.stepper_function do |stepper, _, &step|
+    # this returns result, info identical to how
+    # calling run returns result and info
+    argument, _ = step.call
+
+    if argument.length >= 2
+      stepper.switch_to(2)
+    end
+
+    stepper.continue
+  end
+
+  o.add_step :track1, :method_1
+  o.add_step :track1, :method_2
+  o.add_step :track2, :method_3
+  o.add_step :track2, :method_4
+end
+
+```
+
+![example 2 3 - page 1](https://user-images.githubusercontent.com/65030/38451877-42d5d24a-3a06-11e8-9b94-dc6ec9f0edc9.png)
+
+`stepper_function` and `track_alias` combine are known as a strategy. The next section will dig into this more deeply.
+
+## Strategy
+
 
 ## Info
 
