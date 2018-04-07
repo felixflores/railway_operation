@@ -148,6 +148,8 @@ One important detail to call out here is that calling run returns the `result` o
 A more detailed explanation of `info` is on the [RailwayOperation: Info](https://github.com/felixflores/railway_operation#info) section.
 
 ## Multitrack Execution
+
+### Stepper Function
 So far we've seen a single track execution of an operation. The track is the first argument of the `add_step` method. In our previous example all our steps executed on track 1.
 
 ![basic - page 1](https://user-images.githubusercontent.com/65030/38450687-5067bd94-39f0-11e8-9b85-198ba7b28b1b.png)
@@ -258,13 +260,17 @@ The `info` argument is the same `info` object we've seen from calling `run`, it 
 
 Finally, `step` is a `lambda` which runs the step once called. Overlayed on top of our previous diagram, it would roughly look like this.
 
-![example 2 2 info - page 1](https://user-images.githubusercontent.com/65030/38450987-c93630ac-39f5-11e8-96cc-283fd00ff5ab.png)
+![example 2 2 info - page 1 2](https://user-images.githubusercontent.com/65030/38457951-3c76074e-3a65-11e8-9243-3dfe412dd645.png)
 
 To overlay the `stepper_function` in our example more concretely, looks something like this.
 
-![example 2 2 decisions - page 1 2](https://user-images.githubusercontent.com/65030/38451168-33f5fc12-39f9-11e8-9b5f-6e6e979afe0f.png)
+![example 2 2 decisions - page 1 3](https://user-images.githubusercontent.com/65030/38458117-270bbb80-3a68-11e8-8e48-ecfba0e8512b.png)
 
-The last concept needed for the multi-tract execution context is the idea of track alias. Instead of simply relying on the ordinal track index of 1, 2, 3, .... We can instead map those indices to a symbol.
+This process is recursed until the highest index step in the operation is reached. In this case the `operation.last_step_index` is 3. When the final step recursion is reach the value of the argument and info at that point is returned as the result of the operation.
+
+### Track Alias
+
+Another important concept for multi-tract execution is the idea of track alias. Instead of simply relying on the ordinal track index of 1, 2, 3, and so on, we can instead map those indices to a symbol.
 
 
 ```ruby

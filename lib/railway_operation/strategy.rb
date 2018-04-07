@@ -27,7 +27,7 @@ module RailwayOperation
         }
       )
 
-       [tracks, stepper_fn]
+      [tracks, stepper_fn]
     end
 
     def self.norm_exceptional(norm: {}, exceptional: {})
