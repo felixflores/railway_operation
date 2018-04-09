@@ -125,17 +125,9 @@ describe RailwayOperation::TestOperator do
       let(:argument) { {} }
 
       it 'defines default value for operation' do
-        info = instance_double(RailwayOperation::Info)
-
-        expect(RailwayOperation::Info).to receive(:new).with(
-          hash_including(operation: described_class.operation(:default))
-        ).and_return(info)
-
         expect(subject).to receive(:_run_step).with(
           argument,
-          info,
-          track_identifier: 1,
-          step_index: 1
+          kind_of(RailwayOperation::Info)
         )
 
         subject.run_step(argument, track_identifier: 1, step_index: 1)

@@ -172,6 +172,14 @@ module RailwayOperation
       self[:errors]
     end
 
+    def track_identifier
+      self[:track_identifier]
+    end
+
+    def step_index
+      self[:step_index]
+    end
+
     def timestamp
       Time.respond_to?(:current) ? Time.current : Time.now
     end

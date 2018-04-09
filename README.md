@@ -249,7 +249,6 @@ The `stepper` argument is control structure that dictates the movement of the ex
 ```ruby
 stepper.continue
 stepper.switch_to(specified_track)
-stepper.fail_step
 stepper.successor_track
 stepper.halt_operation
 stepper.fail_operation
@@ -302,6 +301,8 @@ end
 `stepper_function` and `track_alias` combine are known as a strategy. The next section will dig into this more deeply.
 
 ## Strategy
+![strategy - page 1](https://user-images.githubusercontent.com/65030/38476310-004026b2-3b7b-11e8-8f63-f96ef5f3fe1e.png)
+
 
 
 ## Info

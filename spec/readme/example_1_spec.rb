@@ -53,9 +53,9 @@ describe Readme::Example1 do
       "+---+-------+---------+----------------+--------+\n"\
       "|   | Track | Success | Method         | Errors |\n"\
       "+---+-------+---------+----------------+--------+\n"\
-      "| 0 |       | true    | first_method   | []     |\n"\
-      "| 1 |       | true    | another_method | []     |\n"\
-      "| 2 |       | true    | final_method   | []     |\n"\
+      "| 0 | 1     | true    | first_method   | []     |\n"\
+      "| 1 | 1     | true    | another_method | []     |\n"\
+      "| 2 | 1     | true    | final_method   | []     |\n"\
       '+---+-------+---------+----------------+--------+'
     )
   end

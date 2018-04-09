@@ -2,7 +2,7 @@
 
 module RailwayOperation
   class Strategy
-    DEFAULT = lambda do |stepper, _info, &step|
+    DEFAULT = lambda do |stepper, info, &step|
       begin
         _result, new_info = step.call
 
@@ -12,7 +12,7 @@ module RailwayOperation
 
         stepper.continue
       rescue StandardError => e
-        raise e, e.message, e.backtrace
+        stepper.raise_error(e, new_info || info)
       end
     end
 
@@ -41,15 +41,13 @@ module RailwayOperation
 
           stepper.switch_to(track_switch) if track_switch
           stepper.continue
-        rescue StandardError, Runtime => e
+        rescue StandardError => e
           track_switch = exceptional.detect do |_, predicate|
             predicate.call(e)
           end.first
 
-          raise(e, e.message, e.backtrace) unless track_switch
-
-          stepper.switch_to(track_switch)
-          stepper.continue
+          stepper.raise_error(e, new_info || info) unless track_switch
+          stepper.switch_to(track_switch).continue
         end
       end
     end
