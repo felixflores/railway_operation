@@ -3,56 +3,51 @@
 require 'spec_helper'
 
 describe RailwayOperation::Stepper do
-  context 'vectors' do
-    context 'Argument' do
-      context 'DEFAULT' do
-        it 'returns argument' do
-          argument = 1
-          expect(described_class::Argument::DEFAULT.call(argument, {})).to equal(argument)
+  context 'execution manipulator' do
+    describe '#continue' do
+      it 'returns the vector' do
+        expect(subject.continue).to eq(subject.vector)
+      end
+    end
+
+    describe '#switch_to' do
+      let(:operation) { instance_double(RailwayOperation::Operation) }
+
+      context 'specified_track is a symbol' do
+        let(:track) { :specified_track }
+        let(:info) do
+          { operation: operation, execution: [] }
+        end
+
+        it 'returns the specified track' do
+          track_vector = subject.switch_to(track)
+          expect(operation).to receive(:track_index).with(track)
+          expect(track_vector.call(info)).to eq(track)
         end
       end
 
-      context 'FAIL_OPERATION' do
-        it 'returns the argument from the first step' do
-          first_argument = 1
-          second_argument = 2
-
-          info = RailwayOperation::Info.new(
-            operation: 'op',
+      context 'specified_track is a lambda' do
+        let(:info) do
+          {
+            operation: operation,
             execution: [
-              RailwayOperation::Step.new(argument: first_argument),
-              RailwayOperation::Step.new(argument: second_argument)
+              instance_double(RailwayOperation::Step, track_identifier: :specified_track)
             ]
-          )
+          }
+        end
 
-          expect(described_class::Argument::FAIL_OPERATION.call('a', info)).to equal(first_argument)
+        let(:track) do
+          lambda do |_operation, current_track|
+            "#{current_track} test"
+          end
+        end
+
+        it 'returns the track resulting from lambda' do
+          track_vector = subject.switch_to(track)
+          expect(operation).to receive(:track_index).with('specified_track test')
+          expect(track_vector.call(info)).to eq('specified_track test')
         end
       end
-    end
-
-    context 'TrackIdentifier' do
-      context 'DEFAULT' do
-        it 'returns the track identifier'
-      end
-
-      context 'NOOP' do
-        it 'returns the noop track'
-      end
-    end
-
-    context 'StepIndex' do
-      context 'DEFAULT'
     end
   end
-
-  describe '.step'
-  describe '#[]'
-  describe '#step'
-  describe '#halt_operation'
-  describe '#fail_operation'
-  describe '#fail_step'
-  describe '#continue'
-  describe '#switch_to'
-  describe '#successor_track'
-  describe '#error_message'
 end

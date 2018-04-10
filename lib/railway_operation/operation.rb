@@ -83,15 +83,15 @@ module RailwayOperation
     end
 
     def track_identifier(index_or_id)
-      id = index_or_id.is_a?(Integer) ? @track_alias[index_or_id] : index_or_id
-      raise "Unable to determine track_identifier for `#{index_or_id}`" unless valid_track_id?(id)
+      return index_or_id unless index_or_id.is_a?(Integer)
+      validate_index(index_or_id)
 
-      id
+      @track_alias[index_or_id] || index_or_id
     end
 
     def track_index(track_identifier)
       index = @track_alias.index(track_identifier) || track_identifier
-      raise "Invalid track `#{track_identifier}`, must be a positive integer" unless valid_index?(index)
+      validate_index(index)
 
       index
     end
@@ -100,14 +100,16 @@ module RailwayOperation
       :noop_track
     end
 
-    private
-
-    def valid_index?(index)
-      index.is_a?(Numeric) && index.positive?
+    def initial_track
+      track_identifier(1)
     end
 
-    def valid_track_id?(id)
-      valid_index?(id) || true
+    private
+
+    def validate_index(index)
+      unless index.is_a?(Integer) && index.positive?
+        raise "Invalid track `#{index}`, must be a positive integer"
+      end
     end
   end
 end

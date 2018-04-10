@@ -70,7 +70,7 @@ module RailwayOperation
           _run(
             argument,
             Info.new(operation: op, **info),
-            track_identifier: track_identifier,
+            track_identifier: op.track_identifier(track_identifier),
             step_index: step_index
           )
         end
@@ -79,24 +79,22 @@ module RailwayOperation
       def run_step(argument, operation: :default, track_identifier:, step_index:, **info)
         op = self.class.operation(operation)
 
-        _run_step(
-          argument,
-          Info.new(operation: op, **info),
+        new_info = Info.new(operation: op, **info)
+        new_info.execution.add_step(
+          argument: argument,
           track_identifier: track_identifier,
           step_index: step_index
         )
+
+        _run_step(argument, new_info)
       end
 
       private
 
-      def _run_step(argument, info, track_identifier:, step_index:)
-        step = info.execution.add_step(
-          argument: argument,
-          track_identifier: info.operation.track_identifier(track_identifier),
-          step_index: step_index
-        )
+      def _run_step(argument, info)
+        step = info.execution.last
 
-        step_definition = info.operation[track_identifier, step_index]
+        step_definition = info.operation[step.track_identifier, step.step_index]
         unless step_definition
           step.noop!
           return [argument, info]
@@ -104,13 +102,13 @@ module RailwayOperation
 
         step.start!
 
-        surrounds = info.operation.step_surrounds[track_identifier] + info.operation.step_surrounds['*']
+        surrounds = info.operation.step_surrounds[step.track_identifier] + info.operation.step_surrounds['*']
         wrap_arguments = [DeepClone.clone(argument), info]
 
         step[:method] = step_definition
         step[:noop] = false
 
-        new_argument = wrap(*surrounds, arguments: wrap_arguments) do
+        step[:argument] = wrap(*surrounds, arguments: wrap_arguments) do
           case step_definition
           when Symbol
             # add_step 1, :method
@@ -125,32 +123,30 @@ module RailwayOperation
         end
 
         step.end!
-        [new_argument, info]
+
+        [step[:argument], info]
       end
 
       def _run(argument, info, track_identifier:, step_index:)
         return [argument, info] if step_index > info.operation.last_step_index
 
-        new_argument = new_info = nil
+        info.execution.add_step(
+          argument: argument,
+          track_identifier: track_identifier,
+          step_index: step_index
+        )
+
         stepper_fn = info.operation.stepper_function || DEFAULT_STRATEGY
 
         vector = Stepper.step(stepper_fn, info) do
-          new_argument, new_info = _run_step(
-            argument,
-            info,
-            track_identifier: track_identifier,
-            step_index: step_index
-          )
-
-          [new_argument, new_info]
+          _run_step(argument, info)
         end
 
-        inf = new_info || info
         _run(
-          vector[:argument].(new_argument || argument, inf),
-          inf,
-          track_identifier: vector[:track_identifier].(track_identifier, inf),
-          step_index: vector[:step_index].(step_index, inf)
+          vector[:argument].(info),
+          info,
+          track_identifier: vector[:track_identifier].(info),
+          step_index: vector[:step_index].(info)
         )
       end
     end
