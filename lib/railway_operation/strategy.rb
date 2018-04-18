@@ -31,7 +31,7 @@ module RailwayOperation
     end
 
     def self.norm_exceptional(norm: {}, exceptional: {})
-      lambda do |stepper, _, &step|
+      lambda do |stepper, info, &step|
         begin
           _, new_info = step.call
 
