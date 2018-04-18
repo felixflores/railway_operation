@@ -37,14 +37,14 @@ module RailwayOperation
 
           track_switch = norm.detect do |_, predicate|
             predicate.call(new_info.execution)
-          end.first
+          end&.first
 
           stepper.switch_to(track_switch) if track_switch
           stepper.continue
         rescue StandardError => e
           track_switch = exceptional.detect do |_, predicate|
             predicate.call(e)
-          end.first
+          end&.first
 
           stepper.raise_error(e, new_info || info) unless track_switch
           stepper.switch_to(track_switch).continue
